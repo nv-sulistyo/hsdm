@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { api } from '../services/api.js';
-import { AppSettings, SystemEnvironment, User } from '../types.js';
-import { Settings, Shield, Plus, Trash2, Check, AlertCircle, Save, FolderCheck, UserCheck, RefreshCw, CheckCircle2, UserCog } from 'lucide-react';
+import { AppSettings, SystemEnvironment, User, ActionTemplate } from '../types.js';
+import { Settings, Shield, Plus, Trash2, Check, AlertCircle, Save, FolderCheck, UserCheck, RefreshCw, CheckCircle2, UserCog, Terminal, Edit2, Lock, X } from 'lucide-react';
 
 interface SettingsPageProps {
   onAccountUpdated: (user: User, token: string) => void;
@@ -37,6 +37,16 @@ export const SettingsPage: React.FC<SettingsPageProps> = ({ onAccountUpdated }) 
   const [settingsMsg, setSettingsMsg] = useState<{ text: string; type: 'success' | 'error' } | null>(null);
   const [passwordMsg, setPasswordMsg] = useState<{ text: string; type: 'success' | 'error' } | null>(null);
 
+  // Action templates state
+  const [templates, setTemplates] = useState<ActionTemplate[]>([]);
+  const [templateMsg, setTemplateMsg] = useState<{ text: string; type: 'success' | 'error' } | null>(null);
+  const [editingTemplate, setEditingTemplate] = useState<ActionTemplate | null>(null);
+  const [templateName, setTemplateName] = useState('');
+  const [templateStack, setTemplateStack] = useState('');
+  const [templateDesc, setTemplateDesc] = useState('');
+  const [templateCommands, setTemplateCommands] = useState('');
+  const [savingTemplate, setSavingTemplate] = useState(false);
+
   const fetchSettings = async () => {
     setLoading(true);
     try {
@@ -62,7 +72,59 @@ export const SettingsPage: React.FC<SettingsPageProps> = ({ onAccountUpdated }) 
 
   useEffect(() => {
     fetchSettings();
+    api.getActionTemplates()
+      .then(setTemplates)
+      .catch(err => console.error('Failed to load action templates:', err));
   }, []);
+
+  const fetchTemplates = async () => {
+    const t = await api.getActionTemplates();
+    setTemplates(t);
+    return t;
+  };
+
+  const openTemplateForm = (t?: ActionTemplate) => {
+    setEditingTemplate(t || null);
+    setTemplateName(t?.name || '');
+    setTemplateStack(t?.tech_stack || '');
+    setTemplateDesc(t?.description || '');
+    setTemplateCommands(t?.commands.join('\n') || '');
+    setTemplateMsg(null);
+  };
+
+  const handleSaveTemplate = async () => {
+    setSavingTemplate(true);
+    setTemplateMsg(null);
+    try {
+      const commands = templateCommands.split('\n').map(c => c.trim()).filter(Boolean);
+      const payload = { name: templateName.trim(), tech_stack: templateStack.trim() || 'General', description: templateDesc.trim(), commands };
+      if (editingTemplate) {
+        await api.updateActionTemplate(editingTemplate.id, payload);
+        setTemplateMsg({ text: `Template '${templateName}' updated.`, type: 'success' });
+      } else {
+        await api.createActionTemplate(payload);
+        setTemplateMsg({ text: `Template '${templateName}' created.`, type: 'success' });
+      }
+      await fetchTemplates();
+      setEditingTemplate(null);
+    } catch (err: any) {
+      setTemplateMsg({ text: err.message || 'Failed to save template', type: 'error' });
+    } finally {
+      setSavingTemplate(false);
+    }
+  };
+
+  const handleDeleteTemplate = async (t: ActionTemplate) => {
+    if (!window.confirm(`Delete template '${t.name}'?`)) return;
+    setTemplateMsg(null);
+    try {
+      await api.deleteActionTemplate(t.id);
+      await fetchTemplates();
+      setTemplateMsg({ text: `Template '${t.name}' deleted.`, type: 'success' });
+    } catch (err: any) {
+      setTemplateMsg({ text: err.message || 'Failed to delete template', type: 'error' });
+    }
+  };
 
   const handleScanEnvironment = async () => {
     setTestingEnv(true);
@@ -400,6 +462,153 @@ export const SettingsPage: React.FC<SettingsPageProps> = ({ onAccountUpdated }) 
             {changingPassword ? 'Updating...' : 'Update Account'}
           </button>
         </form>
+      </div>
+
+      {/* Action Templates */}
+      <div className="p-5 rounded-[28px] bg-white border border-[#E5E0D8] shadow-sm space-y-4">
+        <div className="flex items-center justify-between gap-3">
+          <div className="flex items-center gap-2">
+            <Terminal className="w-5 h-5 text-[#B87333]" />
+            <div>
+              <h3 className="text-sm font-serif font-bold text-[#4A5D45]">Action Templates</h3>
+              <p className="text-xs text-[#8C857E]">
+                Predefined command sets for running actions in Repository Manager (npm, composer, pip, etc.)
+              </p>
+            </div>
+          </div>
+          <button
+            onClick={() => openTemplateForm()}
+            className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-xl text-xs font-semibold bg-[#4A5D45] hover:bg-[#3D4F38] text-white transition shadow-sm"
+          >
+            <Plus className="w-3.5 h-3.5" /> Add Template
+          </button>
+        </div>
+
+        {templateMsg && (
+          <div
+            className={`p-3 rounded-2xl border text-xs ${
+              templateMsg.type === 'success'
+                ? 'bg-[#82937E]/15 border-[#82937E]/30 text-[#3D4F38]'
+                : 'bg-[#C86D51]/15 border-[#C86D51]/30 text-[#9E391C]'
+            }`}
+          >
+            {templateMsg.text}
+          </div>
+        )}
+
+        {editingTemplate && (
+          <div className="space-y-3 rounded-2xl bg-[#F3EFEA]/70 border border-[#E5E0D8] p-4">
+            <div className="flex items-center justify-between">
+              <h4 className="text-xs font-semibold text-[#4A5D45]">
+                {editingTemplate ? `Edit Template: ${editingTemplate.name}` : 'New Template'}
+              </h4>
+              <button
+                onClick={() => setEditingTemplate(null)}
+                className="p-1 rounded-lg text-[#8C857E] hover:text-[#2C2C2C] hover:bg-[#E5E0D8]/50 transition"
+              >
+                <X className="w-4 h-4" />
+              </button>
+            </div>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-3 text-xs">
+              <div>
+                <label className="block text-[#4A5D45] font-semibold mb-1">Name</label>
+                <input
+                  type="text"
+                  value={templateName}
+                  onChange={e => setTemplateName(e.target.value)}
+                  placeholder="e.g. Node.js — Build"
+                  className="w-full px-3.5 py-2 bg-white border border-[#E5E0D8] rounded-xl text-[#2C2C2C] focus:outline-none focus:border-[#4A5D45]"
+                />
+              </div>
+              <div>
+                <label className="block text-[#4A5D45] font-semibold mb-1">Tech Stack</label>
+                <input
+                  type="text"
+                  value={templateStack}
+                  onChange={e => setTemplateStack(e.target.value)}
+                  placeholder="e.g. Node.js / npm"
+                  className="w-full px-3.5 py-2 bg-white border border-[#E5E0D8] rounded-xl text-[#2C2C2C] focus:outline-none focus:border-[#4A5D45]"
+                />
+              </div>
+            </div>
+            <div className="text-xs">
+              <label className="block text-[#4A5D45] font-semibold mb-1">Description</label>
+              <input
+                type="text"
+                value={templateDesc}
+                onChange={e => setTemplateDesc(e.target.value)}
+                placeholder="Short description (optional)"
+                className="w-full px-3.5 py-2 bg-white border border-[#E5E0D8] rounded-xl text-[#2C2C2C] focus:outline-none focus:border-[#4A5D45]"
+              />
+            </div>
+            <div className="text-xs">
+              <label className="block text-[#4A5D45] font-semibold mb-1">Commands (one per line)</label>
+              <textarea
+                value={templateCommands}
+                onChange={e => setTemplateCommands(e.target.value)}
+                rows={4}
+                spellCheck={false}
+                placeholder={'npm install\nnpm run build'}
+                className="w-full px-3.5 py-2 bg-white border border-[#E5E0D8] rounded-xl text-[#2C2C2C] font-mono focus:outline-none focus:border-[#4A5D45] resize-y"
+              />
+            </div>
+            <div className="flex justify-end">
+              <button
+                onClick={handleSaveTemplate}
+                disabled={savingTemplate}
+                className="inline-flex items-center gap-1.5 px-4 py-2 rounded-xl text-xs font-semibold bg-[#4A5D45] hover:bg-[#3D4F38] text-white disabled:opacity-50 transition shadow-sm"
+              >
+                <Save className="w-3.5 h-3.5" /> {savingTemplate ? 'Saving...' : 'Save Template'}
+              </button>
+            </div>
+          </div>
+        )}
+
+        <div className="space-y-2">
+          {templates.map(t => (
+            <div
+              key={t.id}
+              className="flex items-center justify-between gap-3 px-3.5 py-2.5 rounded-xl bg-[#F3EFEA]/70 border border-[#E5E0D8]"
+            >
+              <div className="min-w-0">
+                <div className="flex items-center gap-2">
+                  <span className="text-xs font-semibold text-[#2C2C2C] truncate">{t.name}</span>
+                  <span className="px-1.5 py-0.5 rounded-lg bg-[#82937E]/15 text-[#3D4F38] text-[10px] font-semibold shrink-0">
+                    {t.tech_stack}
+                  </span>
+                  {t.is_builtin && (
+                    <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded-lg bg-[#D4A373]/20 text-[#8C5828] text-[10px] font-semibold shrink-0">
+                      <Lock className="w-2.5 h-2.5" /> BUILT-IN
+                    </span>
+                  )}
+                </div>
+                {t.description && <p className="text-[11px] text-[#8C857E] mt-0.5 truncate">{t.description}</p>}
+                <p className="text-[11px] font-mono text-[#6E6760] mt-0.5 truncate">$ {t.commands.join(' && ')}</p>
+              </div>
+              <div className="flex items-center gap-1.5 shrink-0">
+                <button
+                  onClick={() => openTemplateForm(t)}
+                  className="p-2 rounded-xl bg-white hover:bg-[#EAE4DC] text-[#6E6760] hover:text-[#4A5D45] border border-[#E5E0D8] transition"
+                  title="Edit Template"
+                >
+                  <Edit2 className="w-3.5 h-3.5" />
+                </button>
+                {!t.is_builtin && (
+                  <button
+                    onClick={() => handleDeleteTemplate(t)}
+                    className="p-2 rounded-xl bg-white hover:bg-[#C86D51]/15 text-[#6E6760] hover:text-[#C86D51] border border-[#E5E0D8] transition"
+                    title="Delete Template"
+                  >
+                    <Trash2 className="w-3.5 h-3.5" />
+                  </button>
+                )}
+              </div>
+            </div>
+          ))}
+          {templates.length === 0 && (
+            <p className="text-xs text-[#8C857E] text-center py-4">No templates yet. Click "Add Template" to create one.</p>
+          )}
+        </div>
       </div>
     </div>
   );

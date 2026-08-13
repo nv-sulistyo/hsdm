@@ -5,6 +5,7 @@ import { RepoStatusBadge } from '../components/StatusBadge.js';
 import { AddRepoWizard } from '../components/AddRepoWizard.js';
 import { LocalChangesModal } from '../components/LocalChangesModal.js';
 import { LogViewerModal } from '../components/LogViewerModal.js';
+import { ActionRunnerModal } from '../components/ActionRunnerModal.js';
 import {
   FolderGit2,
   Plus,
@@ -35,6 +36,7 @@ export const RepositoriesPage: React.FC = () => {
 
   // Modals state
   const [showAddWizard, setShowAddWizard] = useState(false);
+  const [actionModalRepo, setActionModalRepo] = useState<Repository | null>(null);
   const [localChangesModalRepo, setLocalChangesModalRepo] = useState<{
     repo: Repository;
     dirtyFiles: string[];
@@ -73,8 +75,8 @@ export const RepositoriesPage: React.FC = () => {
 
   const [actionMessage, setActionMessage] = useState<{ text: string; type: 'success' | 'error' } | null>(null);
 
-  const fetchRepositories = async () => {
-    setLoading(true);
+  const fetchRepositories = async (silent = false) => {
+    if (!silent) setLoading(true);
     try {
       const [repos, sett] = await Promise.all([
         api.getRepositories(),
@@ -83,14 +85,20 @@ export const RepositoriesPage: React.FC = () => {
       setRepositories(repos);
       setSettings(sett);
     } catch (err: any) {
-      setActionMessage({ text: err.message || 'Failed to fetch repositories', type: 'error' });
+      if (silent) {
+        console.error('Auto-refresh failed:', err);
+      } else {
+        setActionMessage({ text: err.message || 'Failed to fetch repositories', type: 'error' });
+      }
     } finally {
-      setLoading(false);
+      if (!silent) setLoading(false);
     }
   };
 
   useEffect(() => {
     fetchRepositories();
+    const interval = setInterval(() => fetchRepositories(true), 10000);
+    return () => clearInterval(interval);
   }, []);
 
   const handleStatusCheck = async (repo: Repository) => {
@@ -368,6 +376,14 @@ export const RepositoriesPage: React.FC = () => {
                   className="px-3 py-1.5 rounded-xl text-xs font-semibold bg-[#F3EFEA] hover:bg-[#EAE4DC] text-[#4A5D45] border border-[#E5E0D8] transition flex items-center gap-1"
                 >
                   <History className="w-3.5 h-3.5 text-[#82937E]" /> History
+                </button>
+
+                <button
+                  onClick={() => setActionModalRepo(repo)}
+                  className="px-3 py-1.5 rounded-xl text-xs font-semibold bg-[#F3EFEA] hover:bg-[#EAE4DC] text-[#4A5D45] border border-[#E5E0D8] transition flex items-center gap-1"
+                  title="Run custom commands (npm install, build, etc.)"
+                >
+                  <Terminal className="w-3.5 h-3.5 text-[#82937E]" /> Actions
                 </button>
 
                 <button
@@ -697,6 +713,9 @@ export const RepositoriesPage: React.FC = () => {
       {selectedDeployment && (
         <LogViewerModal deployment={selectedDeployment} onClose={() => setSelectedDeployment(null)} />
       )}
+
+      {/* Action Runner Modal */}
+      <ActionRunnerModal repo={actionModalRepo} onClose={() => setActionModalRepo(null)} />
     </div>
   );
 };

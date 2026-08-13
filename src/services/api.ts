@@ -8,7 +8,9 @@ import {
   DashboardStats,
   BranchInfo,
   CommitLogItem,
-  GitStatusDetails
+  GitStatusDetails,
+  ActionTemplate,
+  ActionRun
 } from '../types.js';
 
 const API_BASE = '';
@@ -150,5 +152,30 @@ export const api = {
     }),
 
   // Audit Logs
-  getAuditLogs: (limit = 100) => request<AuditLog[]>(`/api/system/audit-logs?limit=${limit}`)
+  getAuditLogs: (limit = 100) => request<AuditLog[]>(`/api/system/audit-logs?limit=${limit}`),
+
+  // Action Templates
+  getActionTemplates: () => request<ActionTemplate[]>('/api/actions/templates'),
+  createActionTemplate: (data: { name: string; tech_stack: string; description?: string; commands: string[] }) =>
+    request<ActionTemplate>('/api/actions/templates', {
+      method: 'POST',
+      body: JSON.stringify(data)
+    }),
+  updateActionTemplate: (id: number, data: { name?: string; tech_stack?: string; description?: string; commands?: string[] }) =>
+    request<ActionTemplate>(`/api/actions/templates/${id}`, {
+      method: 'PUT',
+      body: JSON.stringify(data)
+    }),
+  deleteActionTemplate: (id: number) =>
+    request<{ message: string }>(`/api/actions/templates/${id}`, { method: 'DELETE' }),
+
+  // Action Runs
+  runAction: (repositoryId: number, payload: { templateId?: number; commands?: string[]; timeoutSeconds?: number }) =>
+    request<ActionRun>('/api/actions/run', {
+      method: 'POST',
+      body: JSON.stringify({ repositoryId, ...payload })
+    }),
+  getActionRuns: (repositoryId?: number, limit = 50) =>
+    request<ActionRun[]>(`/api/actions/runs?limit=${limit}${repositoryId ? `&repositoryId=${repositoryId}` : ''}`),
+  getActionRun: (id: number) => request<ActionRun>(`/api/actions/runs/${id}`)
 };

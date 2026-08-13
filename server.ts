@@ -9,6 +9,7 @@ import repositoryRoutes from './src/server/routes/repositories.js';
 import deploymentRoutes from './src/server/routes/deployments.js';
 import systemRoutes from './src/server/routes/system.js';
 import webhookRoutes from './src/server/routes/webhooks.js';
+import actionRoutes from './src/server/routes/actions.js';
 
 async function startServer() {
   // Initialize SQLite Database schema & default seeds
@@ -49,6 +50,7 @@ async function startServer() {
   app.use('/api/repositories', repositoryRoutes);
   app.use('/api/deployments', deploymentRoutes);
   app.use('/api/system', systemRoutes);
+  app.use('/api/actions', actionRoutes);
   app.use('/webhooks', webhookRoutes);
 
   // Health check endpoint

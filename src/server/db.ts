@@ -98,6 +98,32 @@ export function initDatabase() {
       created_at TEXT NOT NULL,
       updated_at TEXT NOT NULL
     );
+
+    CREATE TABLE IF NOT EXISTS action_templates (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      name TEXT UNIQUE NOT NULL,
+      tech_stack TEXT NOT NULL,
+      description TEXT,
+      commands TEXT NOT NULL,
+      is_builtin INTEGER NOT NULL DEFAULT 0,
+      created_at TEXT NOT NULL,
+      updated_at TEXT NOT NULL
+    );
+
+    CREATE TABLE IF NOT EXISTS action_runs (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      repository_id INTEGER NOT NULL REFERENCES repositories(id) ON DELETE CASCADE,
+      template_id INTEGER REFERENCES action_templates(id) ON DELETE SET NULL,
+      template_name TEXT,
+      command TEXT NOT NULL,
+      status TEXT NOT NULL DEFAULT 'RUNNING',
+      exit_code INTEGER,
+      started_at TEXT,
+      finished_at TEXT,
+      output TEXT,
+      error TEXT,
+      created_at TEXT NOT NULL
+    );
   `);
 
   // Deduplicate webhook deliveries (GitHub retries send the same X-GitHub-Delivery)
@@ -157,6 +183,37 @@ export function initDatabase() {
 
   for (const s of defaultSettings) {
     insertSetting.run(s.key, s.value, now, now);
+  }
+
+  // Seed built-in action templates for well-known tech stacks
+  const builtinTemplates: Array<{ name: string; tech_stack: string; description: string; commands: string[] }> = [
+    { name: 'Node.js — Install Dependencies', tech_stack: 'Node.js / npm', description: 'Install npm dependencies', commands: ['npm install'] },
+    { name: 'Node.js — Build', tech_stack: 'Node.js / npm', description: 'Install dependencies and build the project', commands: ['npm install', 'npm run build'] },
+    { name: 'Node.js — Test', tech_stack: 'Node.js / npm', description: 'Run the test suite', commands: ['npm test'] },
+    { name: 'Node.js — Dev Server', tech_stack: 'Node.js / npm', description: 'Start the development server (long-running, terminated by timeout)', commands: ['npm run dev'] },
+    { name: 'Vite / React — Build', tech_stack: 'Vite / React', description: 'Install and build a Vite/React app', commands: ['npm install', 'npm run build'] },
+    { name: 'Next.js — Build', tech_stack: 'Next.js', description: 'Install and build a Next.js app', commands: ['npm install', 'npm run build'] },
+    { name: 'Next.js — Production Start', tech_stack: 'Next.js', description: 'Start the Next.js production server', commands: ['npm run start'] },
+    { name: 'Yarn — Install & Build', tech_stack: 'Yarn', description: 'Install dependencies and build with Yarn', commands: ['yarn install', 'yarn build'] },
+    { name: 'pnpm — Install & Build', tech_stack: 'pnpm', description: 'Install dependencies and build with pnpm', commands: ['pnpm install', 'pnpm build'] },
+    { name: 'Python — Install Requirements', tech_stack: 'Python', description: 'Install Python dependencies via pip', commands: ['pip install -r requirements.txt'] },
+    { name: 'Python — venv + Install', tech_stack: 'Python', description: 'Create a virtual environment and install dependencies', commands: ['python3 -m venv .venv', '.venv/bin/pip install -r requirements.txt'] },
+    { name: 'Python — Django Migrate', tech_stack: 'Python / Django', description: 'Apply Django database migrations', commands: ['python3 manage.py migrate'] },
+    { name: 'PHP — Composer Install', tech_stack: 'PHP', description: 'Install Composer dependencies (production)', commands: ['composer install --no-dev'] },
+    { name: 'Laravel — Full Deploy', tech_stack: 'PHP / Laravel', description: 'Install dependencies, migrate, and build assets', commands: ['composer install --no-dev', 'php artisan migrate --force', 'npm install', 'npm run build'] },
+    { name: 'Go — Build All', tech_stack: 'Go', description: 'Compile all Go packages', commands: ['go build ./...'] },
+    { name: 'Go — Test All', tech_stack: 'Go', description: 'Run the Go test suite', commands: ['go test ./...'] },
+    { name: 'Docker — Build & Up', tech_stack: 'Docker', description: 'Build images and start containers in detached mode', commands: ['docker compose build', 'docker compose up -d'] },
+    { name: 'Rust — Cargo Build', tech_stack: 'Rust', description: 'Compile the Rust project', commands: ['cargo build'] },
+    { name: 'Rust — Cargo Test', tech_stack: 'Rust', description: 'Run the Rust test suite', commands: ['cargo test'] }
+  ];
+
+  const insertTemplate = db.prepare(`
+    INSERT OR IGNORE INTO action_templates (name, tech_stack, description, commands, is_builtin, created_at, updated_at)
+    VALUES (?, ?, ?, ?, 1, ?, ?)
+  `);
+  for (const t of builtinTemplates) {
+    insertTemplate.run(t.name, t.tech_stack, t.description, JSON.stringify(t.commands), now, now);
   }
 
   console.log('[DB] Database initialized successfully');
