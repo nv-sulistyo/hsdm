@@ -1,0 +1,50 @@
+@import "tailwindcss";
+
+@import url('https://fonts.googleapis.com/css2?family=Newsreader:ital,opsz,wght@1,6..72,400..700&family=Plus+Jakarta+Sans:ital,wght@0,400..700;1,400..700&family=JetBrains+Mono:wght@400;500;600&display=swap');
+
+:root {
+  --bg-canvas: #F9F6F2;
+  --bg-card: #FFFFFF;
+  --bg-card-subtle: #F3EFEA;
+  --bg-card-dark: #2A2E28;
+  --border-color: #E5E0D8;
+  --text-main: #2C2C2C;
+  --text-muted: #6E6760;
+  --sage-dark: #4A5D45;
+  --sage-medium: #82937E;
+  --sage-light: #93A68F;
+  --ochre-warm: #D4A373;
+  --ochre-dark: #C08F5D;
+}
+
+body {
+  background-color: #F9F6F2;
+  color: #2C2C2C;
+  font-family: 'Plus Jakarta Sans', system-ui, -apple-system, sans-serif;
+  margin: 0;
+  padding: 0;
+}
+
+.font-serif-italic {
+  font-family: 'Newsreader', serif;
+  font-style: italic;
+}
+
+/* Custom scrollbar for natural tones theme */
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+
+::-webkit-scrollbar-track {
+  background: #F3EFEA;
+}
+
+::-webkit-scrollbar-thumb {
+  background: #D5CFC7;
+  border-radius: 9999px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: #82937E;
+}
