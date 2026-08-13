@@ -11,6 +11,20 @@ if (!fs.existsSync(dbDir)) {
 const dbPath = path.join(dbDir, 'deployment_manager.db');
 export const db = new DatabaseSync(dbPath);
 
+// Convert a Windows-style path (e.g. "C:\www\wwwroot") to a Linux absolute path ("/www/wwwroot").
+export function toLinuxPath(p: string): string {
+  if (!p) return p;
+  let out = p.replace(/\\/g, '/');
+  const m = out.match(/^[A-Za-z]:\/+(.*)$/);
+  if (m) {
+    out = '/' + m[1].replace(/^\/+/, '');
+  } else if (!out.startsWith('/')) {
+    out = '/' + out;
+  }
+  out = out.replace(/\/{2,}/g, '/');
+  return out;
+}
+
 // Enable WAL mode and foreign keys
 try {
   db.exec('PRAGMA journal_mode = WAL;');
@@ -214,6 +228,56 @@ export function initDatabase() {
   `);
   for (const t of builtinTemplates) {
     insertTemplate.run(t.name, t.tech_stack, t.description, JSON.stringify(t.commands), now, now);
+  }
+
+  // Self-heal: if the DB file was produced on a Windows machine (e.g. a laptop DB
+  // uploaded to the Linux server), convert Windows-style paths to Linux equivalents
+  // so path validation keeps working. Runs only on non-Windows hosts and is idempotent.
+  if (process.platform !== 'win32') {
+    const changes: string[] = [];
+
+    const rootsRow = db.prepare("SELECT value FROM settings WHERE key = 'allowed_deploy_roots'").get() as { value: string } | undefined;
+    if (rootsRow) {
+      try {
+        const roots = JSON.parse(rootsRow.value);
+        if (Array.isArray(roots)) {
+          const fixed = roots.map(r => (typeof r === 'string' ? toLinuxPath(r) : r));
+          if (JSON.stringify(fixed) !== JSON.stringify(roots)) {
+            db.prepare("UPDATE settings SET value = ?, updated_at = ? WHERE key = 'allowed_deploy_roots'")
+              .run(JSON.stringify(fixed), now);
+            changes.push(`allowed_deploy_roots: ${rootsRow.value} -> ${JSON.stringify(fixed)}`);
+          }
+        }
+      } catch {
+        // Leave malformed value untouched.
+      }
+    }
+
+    for (const key of ['ssh_key_path', 'known_hosts_path']) {
+      const row = db.prepare('SELECT value FROM settings WHERE key = ?').get(key) as { value: string } | undefined;
+      if (row && /^[A-Za-z]:[\\/]|\\\\/.test(row.value)) {
+        const fixed = toLinuxPath(row.value);
+        db.prepare('UPDATE settings SET value = ?, updated_at = ? WHERE key = ?').run(fixed, now, key);
+        changes.push(`${key}: ${row.value} -> ${fixed}`);
+      }
+    }
+
+    const repos = db.prepare('SELECT id, local_path FROM repositories').all() as Array<{ id: number; local_path: string }>;
+    for (const r of repos) {
+      if (/^[A-Za-z]:[\\/]|\\\\/.test(r.local_path)) {
+        const fixed = toLinuxPath(r.local_path);
+        db.prepare('UPDATE repositories SET local_path = ?, updated_at = ? WHERE id = ?').run(fixed, now, r.id);
+        changes.push(`repo #${r.id} local_path: ${r.local_path} -> ${fixed}`);
+      }
+    }
+
+    if (changes.length > 0) {
+      db.prepare(`
+        INSERT INTO audit_logs (username, action, details, created_at)
+        VALUES ('system', 'DB_SELF_HEAL', ?, ?)
+      `).run(changes.join('; '), now);
+      console.log(`[DB] Self-heal (Windows -> Linux paths): ${changes.join('; ')}`);
+    }
   }
 
   console.log('[DB] Database initialized successfully');

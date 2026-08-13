@@ -10,6 +10,8 @@ import {
   getActionRuns,
   getActionRunById
 } from '../services/action.service.js';
+import { db } from '../db.js';
+import { logAudit } from '../services/audit.service.js';
 
 const router = Router();
 
@@ -107,6 +109,30 @@ router.get('/runs/:id', (req, res) => {
     return res.status(404).json({ error: `Action run #${id} not found.` });
   }
   return res.json(run);
+});
+
+// Clear action run history (optional ?repositoryId= filter)
+router.delete('/runs', (req: AuthenticatedRequest, res) => {
+  try {
+    const repositoryId = req.query.repositoryId ? parseInt(req.query.repositoryId as string, 10) : undefined;
+    let info;
+    if (repositoryId) {
+      info = db.prepare('DELETE FROM action_runs WHERE repository_id = ?').run(repositoryId);
+    } else {
+      info = db.prepare('DELETE FROM action_runs').run();
+    }
+    logAudit({
+      userId: req.user?.id,
+      username: req.user?.username,
+      action: 'CLEAR_ACTION_RUNS',
+      repositoryId,
+      ipAddress: req.ip,
+      details: `Deleted ${Number(info.changes)} action run(s)`
+    });
+    return res.json({ message: `Deleted ${Number(info.changes)} action run(s).`, deleted: Number(info.changes) });
+  } catch (err: any) {
+    return res.status(500).json({ error: err.message });
+  }
 });
 
 export default router;

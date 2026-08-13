@@ -68,7 +68,7 @@ export const api = {
     }),
 
   // Dashboard
-  getDashboardStats: () => request<DashboardStats>('/api/dashboard/stats'),
+  getDashboardStats: () => request<DashboardStats>('/api/system/dashboard/stats'),
 
   // Repositories
   getRepositories: () => request<Repository[]>('/api/repositories'),
@@ -107,9 +107,15 @@ export const api = {
   getDeployments: (repositoryId?: number, limit = 100) =>
     request<Deployment[]>(`/api/deployments?limit=${limit}${repositoryId ? `&repositoryId=${repositoryId}` : ''}`),
   getDeployment: (id: number) => request<Deployment>(`/api/deployments/${id}`),
+  clearDeployments: (repositoryId?: number) =>
+    request<{ message: string; deleted: number }>(`/api/deployments${repositoryId ? `?repositoryId=${repositoryId}` : ''}`, {
+      method: 'DELETE'
+    }),
 
   // Webhooks
   getWebhookHistory: (limit = 100) => request<WebhookEvent[]>(`/webhooks/history?limit=${limit}`),
+  clearWebhookEvents: () =>
+    request<{ message: string; deleted: number }>('/webhooks/events', { method: 'DELETE' }),
 
   // System & SSH
   inspectDirectory: (path: string, git_url?: string) =>
@@ -153,6 +159,8 @@ export const api = {
 
   // Audit Logs
   getAuditLogs: (limit = 100) => request<AuditLog[]>(`/api/system/audit-logs?limit=${limit}`),
+  clearAuditLogs: () =>
+    request<{ message: string; deleted: number }>('/api/system/audit-logs', { method: 'DELETE' }),
 
   // Action Templates
   getActionTemplates: () => request<ActionTemplate[]>('/api/actions/templates'),
@@ -177,5 +185,9 @@ export const api = {
     }),
   getActionRuns: (repositoryId?: number, limit = 50) =>
     request<ActionRun[]>(`/api/actions/runs?limit=${limit}${repositoryId ? `&repositoryId=${repositoryId}` : ''}`),
-  getActionRun: (id: number) => request<ActionRun>(`/api/actions/runs/${id}`)
+  getActionRun: (id: number) => request<ActionRun>(`/api/actions/runs/${id}`),
+  clearActionRuns: (repositoryId?: number) =>
+    request<{ message: string; deleted: number }>(`/api/actions/runs${repositoryId ? `?repositoryId=${repositoryId}` : ''}`, {
+      method: 'DELETE'
+    })
 };

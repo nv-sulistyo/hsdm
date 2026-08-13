@@ -1,6 +1,8 @@
 import { Router } from 'express';
 import { processGithubWebhook, getWebhookHistory } from '../services/webhook.service.js';
 import { requireAuth } from '../middleware/auth.middleware.js';
+import { db } from '../db.js';
+import { logAudit } from '../services/audit.service.js';
 
 const router = Router();
 
@@ -33,6 +35,30 @@ router.get('/history', requireAuth, (req, res) => {
   try {
     const history = getWebhookHistory(limit);
     return res.json(history);
+  } catch (err: any) {
+    return res.status(500).json({ error: err.message });
+  }
+});
+
+// Clear webhook event history
+router.delete('/events', requireAuth, (req: any, res) => {
+  try {
+    const repositoryId = req.query.repositoryId ? parseInt(req.query.repositoryId as string, 10) : undefined;
+    let info;
+    if (repositoryId) {
+      info = db.prepare('DELETE FROM webhook_events WHERE repository_id = ?').run(repositoryId);
+    } else {
+      info = db.prepare('DELETE FROM webhook_events').run();
+    }
+    logAudit({
+      userId: req.user?.id,
+      username: req.user?.username,
+      action: 'CLEAR_WEBHOOK_EVENTS',
+      repositoryId,
+      ipAddress: req.ip,
+      details: `Deleted ${Number(info.changes)} webhook event(s)`
+    });
+    return res.json({ message: `Deleted ${Number(info.changes)} webhook event(s).`, deleted: Number(info.changes) });
   } catch (err: any) {
     return res.status(500).json({ error: err.message });
   }

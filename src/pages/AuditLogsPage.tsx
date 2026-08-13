@@ -1,12 +1,13 @@
 import React, { useState, useEffect } from 'react';
 import { api } from '../services/api.js';
 import { AuditLog } from '../types.js';
-import { ShieldCheck, RefreshCw, Search, Clock, User, Globe } from 'lucide-react';
+import { ShieldCheck, RefreshCw, Search, Clock, User, Globe, Trash2 } from 'lucide-react';
 
 export const AuditLogsPage: React.FC = () => {
   const [logs, setLogs] = useState<AuditLog[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState('');
+  const [clearing, setClearing] = useState(false);
 
   const fetchLogs = async () => {
     setLoading(true);
@@ -17,6 +18,20 @@ export const AuditLogsPage: React.FC = () => {
       console.error('Failed to fetch audit logs:', err);
     } finally {
       setLoading(false);
+    }
+  };
+
+  const handleClearLogs = async () => {
+    if (!window.confirm('Clear ALL audit logs? This cannot be undone.')) return;
+    setClearing(true);
+    try {
+      await api.clearAuditLogs();
+      await fetchLogs();
+    } catch (err: any) {
+      console.error('Failed to clear audit logs:', err);
+      alert(err.message || 'Failed to clear audit logs');
+    } finally {
+      setClearing(false);
     }
   };
 
@@ -58,6 +73,15 @@ export const AuditLogsPage: React.FC = () => {
             className="px-3.5 py-2 rounded-2xl text-xs font-semibold text-[#4A5D45] bg-white hover:bg-[#F3EFEA] border border-[#E5E0D8] transition flex items-center gap-1.5 shrink-0 shadow-xs"
           >
             <RefreshCw className={`w-3.5 h-3.5 text-[#82937E] ${loading ? 'animate-spin' : ''}`} /> Refresh
+          </button>
+
+          <button
+            onClick={handleClearLogs}
+            disabled={clearing || logs.length === 0}
+            className="px-3.5 py-2 rounded-2xl text-xs font-semibold text-[#9E391C] bg-white hover:bg-[#C86D51]/15 border border-[#E5E0D8] transition flex items-center gap-1.5 shrink-0 shadow-xs disabled:opacity-40 disabled:cursor-not-allowed"
+            title="Clear all audit logs"
+          >
+            <Trash2 className={`w-3.5 h-3.5 text-[#C86D51] ${clearing ? 'animate-spin' : ''}`} /> Clear Logs
           </button>
         </div>
       </div>

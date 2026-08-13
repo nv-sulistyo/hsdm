@@ -13,6 +13,7 @@ import {
   BookOpen
 } from 'lucide-react';
 import { User } from '../types.js';
+import { Logo } from './Logo.js';
 
 export type NavTab = 'dashboard' | 'repositories' | 'deployments' | 'webhooks' | 'git-ssh' | 'settings' | 'audit-logs' | 'guide';
 
@@ -40,15 +41,12 @@ export const Sidebar: React.FC<SidebarProps> = ({ activeTab, setActiveTab, user,
       <div>
         {/* Logo / Header */}
         <div className="p-5 border-b border-[#E5E0D8] flex items-center gap-3">
-          <div className="w-9 h-9 rounded-full bg-[#4A5D45] flex items-center justify-center text-white font-serif text-lg shadow-sm shrink-0">
-            H
-          </div>
-          <div>
+          <Logo size={38} className="shrink-0" />
+          <div className="min-w-0">
             <h1 className="text-sm font-semibold text-[#2C2C2C] tracking-tight leading-snug">
-              Home Server
+              HSDM
             </h1>
-            <p className="text-[11px] font-medium text-[#4A5D45]">Deploy Manager</p>
-            <p className="text-[10px] text-[#8C857E]">aaPanel Helper</p>
+            <p className="text-[10px] font-medium text-[#4A5D45] truncate">Home Server Deploy Manager</p>
           </div>
         </div>
 

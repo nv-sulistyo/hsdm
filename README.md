@@ -9,8 +9,11 @@ Target utama: **Ubuntu Server + aaPanel**, diakses publik lewat **Cloudflare Tun
 - **Auto-deploy via webhook GitHub** — push = situs langsung update (verifikasi HMAC-SHA256, retry ganda otomatis di-dedup)
 - **Manajemen repositori** — tambah repo GitHub, pilih branch, tentukan direktori target di `/www/wwwroot`, mode CLONE/CONNECT
 - **Perintah before/post-pull** — mis. `npm install && npm run build`, restart service
-- **SSH key management** — generate key di UI, tempel ke GitHub Deploy Keys
+- **SSH key management** — generate key di UI, tempel ke GitHub sebagai Deploy Key **atau** SSH key akun (berlaku untuk semua repo)
+- **Repo Actions** — jalankan perintah di folder repo langsung dari UI (install/build/test) dengan template bawaan untuk berbagai tech stack + template custom
+- **Kontrol trigger deploy** — per repo bisa diatur `MANUAL`, `WEBHOOK`, atau `BOTH`
 - **Pemantauan lengkap** — riwayat deployment + log output, riwayat webhook, audit log
+- **Pembersihan riwayat** — hapus deployment, webhook, audit log, dan action run — per kategori atau sekaligus (data repo & pengaturan aman)
 - **Keamanan** — JWT auth (secret persist acak), rate limit login, batas direktori deploy, validasi URL git
 
 ## Teknologi
@@ -56,14 +59,22 @@ node -v   # harus >= 22.5
 
 ### 3. Upload project & build
 
-1. Lewat GUI: **aaPanel → File → /www/wwwroot** → buat folder `hsdm` → upload ZIP project → Extract.
-2. Lalu di terminal:
+**Cara A — git clone (disarankan, memudahkan update):**
 
 ```bash
+cd /www/wwwroot
+git clone https://github.com/<username>/hsdm.git   # -> /www/wwwroot/hsdm
 cd /www/wwwroot/hsdm
 npm install
 npm run build
 ```
+
+**Cara B — upload ZIP lewat GUI:**
+
+> **aaPanel → File → /www/wwwroot** → buat folder `hsdm` → upload ZIP project → Extract.
+> Lalu di terminal: `cd /www/wwwroot/hsdm && npm install && npm run build`
+
+> Catatan: dengan upload ZIP, update berikutnya harus upload ulang — lebih baik pakai git clone agar cukup `git pull` (lihat [Memperbarui Aplikasi](#memperbarui-aplikasi)).
 
 ### 4. Jalankan dengan PM2
 
@@ -120,7 +131,7 @@ Verifikasi: buka `https://app.domain-anda.com/api/health` di browser.
 ### 6. Setup auto-deploy
 
 1. **Login** → ganti kredensial default di Settings → Account Settings.
-2. **Git & SSH** → Generate SSH Key → tempel public key ke GitHub (repo → Settings → Deploy keys).
+2. **Git & SSH** → Generate SSH Key → tempel public key ke GitHub (repo → Settings → Deploy keys), atau sebagai **SSH key akun** (Settings → SSH and GPG keys) agar berlaku untuk semua repo Anda termasuk repo private — satu key tidak bisa dipakai di dua tempat.
 3. **Repositories → Add Repository**:
    - Git URL: `git@github.com:user/repo.git`
    - Branch: `main`
@@ -134,6 +145,19 @@ Verifikasi: buka `https://app.domain-anda.com/api/health` di browser.
 
 Selesai — setiap push otomatis pull + jalankan command dan situs ter-update.
 
+## Memperbarui Aplikasi
+
+```bash
+cd /www/wwwroot/hsdm
+git pull
+npm ci
+npm run build
+pm2 restart hsdm --update-env
+```
+
+> `database/`, `dist/`, dan `node_modules/` tidak ikut di-git, jadi data dan build Anda aman.
+> Jika file DB pernah diambil dari laptop (Windows) dan di-upload ke server, path-nya (mis. `C:\www\wwwroot`) **otomatis dikonversi** ke Linux saat start — cek audit log untuk entri `DB_SELF_HEAL`.
+
 ## Pemecahan Masalah
 
 | Gejala | Penyebab & Solusi |
@@ -142,8 +166,10 @@ Selesai — setiap push otomatis pull + jalankan command dan situs ter-update.
 | Webhook 200 tapi tidak deploy | Branch di GitHub ≠ branch repo; `deployment_trigger` belum `WEBHOOK`/`BOTH`; webhook untuk repo lain |
 | `Signature verification failed` | Webhook Secret di GitHub ≠ secret di aplikasi |
 | `Permission denied` saat pull | Folder bukan milik user eksekusi: `chown -R nova:nova /www/wwwroot/xxx` |
+| `Key already in use` saat menambah Deploy Key di GitHub | Public key sudah terdaftar sebagai **SSH key akun** (GitHub → Settings → SSH and GPG keys) — satu key tidak bisa dipakai di dua tempat. **Tidak perlu menambah deploy key**: SSH key akun otomatis berlaku untuk semua repo Anda (termasuk repo private) |
 | `Path not allowed` saat tambah repo | Local Path di luar *Allowed Deploy Roots* |
 | Log: `This is an experimental feature` (SQLite) | Wajar di Node 22, tidak berbahaya |
+| DB di-upload dari laptop tapi path repo ditolak | DB hasil Windows otomatis dikonversi saat start (audit log `DB_SELF_HEAL`); kalau tidak muncul, cek apakah path benar di Settings → Allowed Deploy Roots |
 | Situs update tapi build tidak jalan | Isi `post_pull_command` (mis. `cd ... && npm install && npm run build`) |
 | Lupa password | Hapus `database/deployment_manager.db` lalu restart PM2 → user `admin/admin123` dibuat ulang (catatan: data repo ikut hilang) |
 

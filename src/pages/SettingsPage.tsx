@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { api } from '../services/api.js';
 import { AppSettings, SystemEnvironment, User, ActionTemplate } from '../types.js';
-import { Settings, Shield, Plus, Trash2, Check, AlertCircle, Save, FolderCheck, UserCheck, RefreshCw, CheckCircle2, UserCog, Terminal, Edit2, Lock, X } from 'lucide-react';
+import { Settings, Shield, Plus, Trash2, Check, AlertCircle, Save, FolderCheck, UserCheck, RefreshCw, CheckCircle2, UserCog, Terminal, Edit2, Lock, X, Database, Loader2 } from 'lucide-react';
 
 interface SettingsPageProps {
   onAccountUpdated: (user: User, token: string) => void;
@@ -46,6 +46,47 @@ export const SettingsPage: React.FC<SettingsPageProps> = ({ onAccountUpdated }) 
   const [templateDesc, setTemplateDesc] = useState('');
   const [templateCommands, setTemplateCommands] = useState('');
   const [savingTemplate, setSavingTemplate] = useState(false);
+
+  // Data & Logs state
+  const [clearingData, setClearingData] = useState<string | null>(null);
+  const [dataMsg, setDataMsg] = useState<{ text: string; type: 'success' | 'error' } | null>(null);
+
+  const handleClearData = async (key: 'deployments' | 'webhooks' | 'audit' | 'actions' | 'all') => {
+    const labels: Record<string, string> = {
+      deployments: 'deployment history',
+      webhooks: 'webhook events',
+      audit: 'audit logs',
+      actions: 'action run history',
+      all: 'ALL logs & history'
+    };
+    if (!window.confirm(`Clear ${labels[key]}? This cannot be undone.`)) return;
+    setClearingData(key);
+    setDataMsg(null);
+    try {
+      let msg = '';
+      if (key === 'deployments' || key === 'all') {
+        const r = await api.clearDeployments();
+        msg += `Deployments: ${r.deleted}. `;
+      }
+      if (key === 'webhooks' || key === 'all') {
+        const r = await api.clearWebhookEvents();
+        msg += `Webhook events: ${r.deleted}. `;
+      }
+      if (key === 'audit' || key === 'all') {
+        const r = await api.clearAuditLogs();
+        msg += `Audit logs: ${r.deleted}. `;
+      }
+      if (key === 'actions' || key === 'all') {
+        const r = await api.clearActionRuns();
+        msg += `Action runs: ${r.deleted}.`;
+      }
+      setDataMsg({ text: `Cleared — ${msg}`, type: 'success' });
+    } catch (err: any) {
+      setDataMsg({ text: err.message || 'Failed to clear data', type: 'error' });
+    } finally {
+      setClearingData(null);
+    }
+  };
 
   const fetchSettings = async () => {
     setLoading(true);
@@ -608,6 +649,60 @@ export const SettingsPage: React.FC<SettingsPageProps> = ({ onAccountUpdated }) 
           {templates.length === 0 && (
             <p className="text-xs text-[#8C857E] text-center py-4">No templates yet. Click "Add Template" to create one.</p>
           )}
+        </div>
+      </div>
+
+      {/* Data & Logs */}
+      <div className="p-5 rounded-[28px] bg-white border border-[#E5E0D8] shadow-sm space-y-4">
+        <div className="flex items-center gap-2">
+          <Database className="w-5 h-5 text-[#B87333]" />
+          <div>
+            <h3 className="text-sm font-serif font-bold text-[#4A5D45]">Data & Logs</h3>
+            <p className="text-xs text-[#8C857E]">Clear application history records (deployments, webhook events, audit logs, action runs)</p>
+          </div>
+        </div>
+
+        {dataMsg && (
+          <div
+            className={`p-3 rounded-2xl border text-xs ${
+              dataMsg.type === 'success'
+                ? 'bg-[#82937E]/15 border-[#82937E]/30 text-[#3D4F38]'
+                : 'bg-[#C86D51]/15 border-[#C86D51]/30 text-[#9E391C]'
+            }`}
+          >
+            {dataMsg.text}
+          </div>
+        )}
+
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+          {[
+            { key: 'deployments', label: 'Deployment History' },
+            { key: 'webhooks', label: 'Webhook Events' },
+            { key: 'audit', label: 'Audit Logs' },
+            { key: 'actions', label: 'Action Run History' }
+          ].map(btn => (
+            <button
+              key={btn.key}
+              onClick={() => handleClearData(btn.key as any)}
+              disabled={clearingData !== null}
+              className="flex items-center justify-between px-4 py-2.5 rounded-xl text-xs font-semibold text-[#6E6760] bg-[#F3EFEA] hover:bg-[#C86D51]/15 hover:text-[#9E391C] border border-[#E5E0D8] transition disabled:opacity-50"
+            >
+              <span>{btn.label}</span>
+              {clearingData === btn.key ? <Loader2 className="w-3.5 h-3.5 animate-spin text-[#C86D51]" /> : <Trash2 className="w-3.5 h-3.5 text-[#C86D51]" />}
+            </button>
+          ))}
+        </div>
+
+        <div className="flex items-center justify-between pt-1 border-t border-[#E5E0D8]">
+          <p className="text-xs text-[#8C857E]">Hapus semua riwayat sekaligus — data repo & pengaturan tidak terpengaruh.</p>
+          <button
+            onClick={() => handleClearData('all')}
+            disabled={clearingData !== null}
+            className="inline-flex items-center gap-1.5 px-4 py-2 rounded-xl text-xs font-semibold text-white bg-[#C86D51] hover:bg-[#9E391C] transition disabled:opacity-50 shadow-sm"
+          >
+            {clearingData === 'all' ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Trash2 className="w-3.5 h-3.5" />}
+            Clear All Data
+          </button>
         </div>
       </div>
     </div>

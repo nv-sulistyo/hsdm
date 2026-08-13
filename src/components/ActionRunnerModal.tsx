@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { api } from '../services/api.js';
 import { Repository, ActionTemplate, ActionRun } from '../types.js';
-import { X, Copy, Check, Terminal, Play, AlertCircle, Clock, Loader2 } from 'lucide-react';
+import { X, Copy, Check, Terminal, Play, AlertCircle, Clock, Loader2, Trash2 } from 'lucide-react';
 
 interface ActionRunnerModalProps {
   repo: Repository | null;
@@ -105,6 +105,16 @@ export const ActionRunnerModal: React.FC<ActionRunnerModalProps> = ({ repo, onCl
     setTimeout(() => setCopied(false), 2000);
   };
 
+  const handleClearRuns = async () => {
+    if (!window.confirm(`Clear ALL action run history for '${repo.name}'? This cannot be undone.`)) return;
+    try {
+      await api.clearActionRuns(repo.id);
+      setRecentRuns([]);
+    } catch (err: any) {
+      setError(err.message || 'Failed to clear action runs');
+    }
+  };
+
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-xs animate-fade-in">
       <div className="relative w-full max-w-4xl max-h-[90vh] bg-white border border-[#E5E0D8] rounded-[28px] shadow-2xl flex flex-col overflow-hidden text-[#2C2C2C]">
@@ -202,9 +212,18 @@ export const ActionRunnerModal: React.FC<ActionRunnerModalProps> = ({ repo, onCl
             {/* Recent runs */}
             {recentRuns.length > 0 && (
               <div className="pt-3 border-t border-[#E5E0D8]">
-                <h4 className="text-xs font-semibold text-[#4A5D45] mb-2 flex items-center gap-1.5">
-                  <Clock className="w-3.5 h-3.5 text-[#82937E]" /> Recent Runs
-                </h4>
+                <div className="flex items-center justify-between mb-2">
+                  <h4 className="text-xs font-semibold text-[#4A5D45] flex items-center gap-1.5">
+                    <Clock className="w-3.5 h-3.5 text-[#82937E]" /> Recent Runs
+                  </h4>
+                  <button
+                    onClick={handleClearRuns}
+                    className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg text-[10px] font-semibold text-[#9E391C] bg-[#F3EFEA] hover:bg-[#C86D51]/15 border border-[#E5E0D8] transition"
+                    title="Clear run history for this repository"
+                  >
+                    <Trash2 className="w-3 h-3 text-[#C86D51]" /> Clear Runs
+                  </button>
+                </div>
                 <div className="space-y-1.5">
                   {recentRuns.map(r => (
                     <button

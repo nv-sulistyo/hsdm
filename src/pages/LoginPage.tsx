@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { api } from '../services/api.js';
 import { User } from '../types.js';
 import { Terminal, Lock, User as UserIcon, AlertCircle, ArrowRight } from 'lucide-react';
+import { Logo } from '../components/Logo.js';
 
 interface LoginPageProps {
   onLoginSuccess: (user: User, token: string) => void;
@@ -34,9 +35,7 @@ export const LoginPage: React.FC<LoginPageProps> = ({ onLoginSuccess }) => {
     <div className="min-h-screen bg-[#F9F6F2] flex items-center justify-center p-4 text-[#2C2C2C] font-sans">
       <div className="w-full max-w-md bg-white border border-[#E5E0D8] rounded-[28px] shadow-sm p-8">
         <div className="flex flex-col items-center text-center mb-8">
-          <div className="w-14 h-14 rounded-full bg-[#4A5D45] text-white flex items-center justify-center font-serif text-2xl shadow-md mb-4">
-            H
-          </div>
+          <Logo size={56} className="mb-4" />
           <h1 className="text-2xl font-serif tracking-tight text-[#4A5D45]">
             Home Server Deploy Manager
           </h1>

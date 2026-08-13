@@ -27,24 +27,32 @@ export const DashboardPage: React.FC<DashboardPageProps> = ({ onNavigateToRepo, 
   const [selectedDeployment, setSelectedDeployment] = useState<Deployment | null>(null);
   const [sshStatus, setSshStatus] = useState<any>(null);
 
-  const fetchDashboardData = async () => {
-    setLoading(true);
+  const fetchDashboardData = async (silent = false) => {
+    if (!silent) setLoading(true);
     try {
-      const [s, ssh] = await Promise.all([
+      const [s, ssh] = await Promise.allSettled([
         api.getDashboardStats(),
         api.getSshKeyStatus()
       ]);
-      setStats(s);
-      setSshStatus(ssh);
-    } catch (err) {
-      console.error('Failed to fetch dashboard stats:', err);
+      if (s.status === 'fulfilled') {
+        setStats(s.value);
+      } else {
+        console.error('Failed to fetch dashboard stats:', s.reason);
+      }
+      if (ssh.status === 'fulfilled') {
+        setSshStatus(ssh.value);
+      } else {
+        console.error('Failed to fetch SSH key status:', ssh.reason);
+      }
     } finally {
-      setLoading(false);
+      if (!silent) setLoading(false);
     }
   };
 
   useEffect(() => {
     fetchDashboardData();
+    const interval = setInterval(() => fetchDashboardData(true), 10000);
+    return () => clearInterval(interval);
   }, []);
 
   return (

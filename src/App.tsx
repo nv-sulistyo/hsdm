@@ -17,6 +17,7 @@ import { SettingsPage } from './pages/SettingsPage.js';
 import { AuditLogsPage } from './pages/AuditLogsPage.js';
 import { GuidePage } from './pages/GuidePage.js';
 import { RefreshCw, Terminal } from 'lucide-react';
+import { Logo } from './components/Logo.js';
 
 export default function App() {
   const [user, setUser] = useState<User | null>(null);
@@ -61,12 +62,10 @@ export default function App() {
   if (loadingUser) {
     return (
       <div className="min-h-screen bg-[#F9F6F2] flex flex-col items-center justify-center p-4 text-[#2C2C2C]">
-        <div className="w-12 h-12 rounded-full bg-[#82937E] flex items-center justify-center text-white font-serif text-xl shadow-md mb-4 animate-pulse">
-          T
-        </div>
+        <Logo size={48} className="mb-4 animate-pulse" />
         <div className="flex items-center gap-2 text-sm font-medium text-[#4A5D45]">
           <RefreshCw className="w-4 h-4 animate-spin text-[#82937E]" />
-          <span>Initializing Terra Server Environment...</span>
+          <span>Loading Home Server Deploy Manager...</span>
         </div>
       </div>
     );

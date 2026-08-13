@@ -148,12 +148,22 @@ router.get('/audit-logs', (req, res) => {
   }
 });
 
+// Clear audit log history
+router.delete('/audit-logs', (req: AuthenticatedRequest, res) => {
+  try {
+    const info = db.prepare('DELETE FROM audit_logs').run();
+    return res.json({ message: `Deleted ${Number(info.changes)} audit log(s).`, deleted: Number(info.changes) });
+  } catch (err: any) {
+    return res.status(500).json({ error: err.message });
+  }
+});
+
 router.get('/dashboard/stats', (req, res) => {
   try {
     const totalRepoRow = db.prepare('SELECT COUNT(*) as count FROM repositories').get() as { count: number };
     const autoDeployRow = db.prepare('SELECT COUNT(*) as count FROM repositories WHERE auto_deploy = 1').get() as { count: number };
-    const successDeployRow = db.prepare('SELECT COUNT(*) as count FROM deployments WHERE status = "SUCCESS"').get() as { count: number };
-    const failedDeployRow = db.prepare('SELECT COUNT(*) as count FROM deployments WHERE status = "FAILED"').get() as { count: number };
+    const successDeployRow = db.prepare("SELECT COUNT(*) as count FROM deployments WHERE status = 'SUCCESS'").get() as { count: number };
+    const failedDeployRow = db.prepare("SELECT COUNT(*) as count FROM deployments WHERE status = 'FAILED'").get() as { count: number };
 
     const lastDep = db.prepare(`
       SELECT d.*, r.name as repository_name

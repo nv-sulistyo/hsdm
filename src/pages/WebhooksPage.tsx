@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { api } from '../services/api.js';
 import { WebhookEvent, Repository } from '../types.js';
-import { Webhook, RefreshCw, Copy, Check, ShieldCheck, AlertCircle, ExternalLink, Code } from 'lucide-react';
+import { Webhook, RefreshCw, Copy, Check, ShieldCheck, AlertCircle, ExternalLink, Code, Trash2 } from 'lucide-react';
 
 export const WebhooksPage: React.FC = () => {
   const [repositories, setRepositories] = useState<Repository[]>([]);
@@ -10,6 +10,21 @@ export const WebhooksPage: React.FC = () => {
   const [reposError, setReposError] = useState('');
   const [historyError, setHistoryError] = useState('');
   const [copiedId, setCopiedId] = useState<string | null>(null);
+  const [clearing, setClearing] = useState(false);
+
+  const handleClearEvents = async () => {
+    if (!window.confirm('Clear ALL webhook delivery events? This cannot be undone.')) return;
+    setClearing(true);
+    try {
+      await api.clearWebhookEvents();
+      await fetchData();
+    } catch (err: any) {
+      console.error('Failed to clear webhook events:', err);
+      alert(err.message || 'Failed to clear webhook events');
+    } finally {
+      setClearing(false);
+    }
+  };
 
   const fetchData = async () => {
     setLoading(true);
@@ -154,7 +169,17 @@ export const WebhooksPage: React.FC = () => {
 
       {/* Webhook Events History Table */}
       <div className="p-5 rounded-[28px] bg-white border border-[#E5E0D8] shadow-sm">
-        <h3 className="text-sm font-serif font-bold text-[#4A5D45] mb-4">Webhook Delivery Events</h3>
+        <div className="flex items-center justify-between mb-4">
+          <h3 className="text-sm font-serif font-bold text-[#4A5D45]">Webhook Delivery Events</h3>
+          <button
+            onClick={handleClearEvents}
+            disabled={clearing || webhookHistory.length === 0}
+            className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-semibold text-[#9E391C] bg-[#F3EFEA] hover:bg-[#C86D51]/15 border border-[#E5E0D8] transition disabled:opacity-40 disabled:cursor-not-allowed"
+            title="Clear all webhook events"
+          >
+            <Trash2 className={`w-3.5 h-3.5 text-[#C86D51] ${clearing ? 'animate-spin' : ''}`} /> Clear Events
+          </button>
+        </div>
 
         <div className="overflow-x-auto">
           {historyError ? (
