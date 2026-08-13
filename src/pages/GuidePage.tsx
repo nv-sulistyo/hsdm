@@ -473,6 +473,17 @@ export const GuidePage: React.FC = () => {
                   <strong>Solusi:</strong> Buka menu <strong>Settings</strong>, lalu tambahkan direktori induk website Anda (misalnya <code className="font-mono">{primaryRoot}</code>) ke dalam daftar <strong>Allowed Deploy Roots</strong>, lalu simpan settings.
                 </p>
               </div>
+
+              {/* FAQ 5 */}
+              <div className="p-4 rounded-2xl bg-[#F3EFEA] border border-[#E5E0D8] space-y-1.5">
+                <h4 className="font-bold text-[#2C2C2C] flex items-center gap-2">
+                  <AlertTriangle className="w-4 h-4 text-[#B87333]" /> Q: Muncul "Key already in use" saat menambah Deploy Key di GitHub?
+                </h4>
+                <p className="text-[#6E6760] leading-relaxed">
+                  <strong>Penyebab:</strong> Public key yang sama sudah terdaftar sebagai <strong>SSH key akun</strong> (GitHub &gt; Settings &gt; SSH and GPG keys) — satu key tidak bisa dipakai di dua tempat.<br />
+                  <strong>Solusi:</strong> <strong>Tidak perlu menambah Deploy Key</strong>. SSH key akun otomatis berlaku untuk semua repo Anda, termasuk repo private. Cukup pastikan status di menu Git/SSH menunjukkan "AUTHENTICATED".
+                </p>
+              </div>
             </div>
           </div>
         </div>
