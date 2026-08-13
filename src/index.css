@@ -1,6 +1,10 @@
 @import "tailwindcss";
 
-@import url('https://fonts.googleapis.com/css2?family=Newsreader:ital,opsz,wght@1,6..72,400..700&family=Plus+Jakarta+Sans:ital,wght@0,400..700;1,400..700&family=JetBrains+Mono:wght@400;500;600&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700&family=Plus+Jakarta+Sans:ital,wght@0,400..700;1,400..700&family=JetBrains+Mono:wght@400;500;600&display=swap');
+
+@theme {
+  --font-serif: 'Poppins', system-ui, sans-serif;
+}
 
 :root {
   --bg-canvas: #F9F6F2;
@@ -23,11 +27,6 @@ body {
   font-family: 'Plus Jakarta Sans', system-ui, -apple-system, sans-serif;
   margin: 0;
   padding: 0;
-}
-
-.font-serif-italic {
-  font-family: 'Newsreader', serif;
-  font-style: italic;
 }
 
 /* Custom scrollbar for natural tones theme */

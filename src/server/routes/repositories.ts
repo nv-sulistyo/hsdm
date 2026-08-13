@@ -121,6 +121,13 @@ router.post('/:id/pull', async (req: AuthenticatedRequest, res) => {
     return res.status(404).json({ error: `Repository ID ${id} not found.` });
   }
 
+  const trigger = repo.deployment_trigger || 'BOTH';
+  if (trigger === 'WEBHOOK') {
+    return res.status(403).json({
+      error: 'Manual deployment is disabled for this repository (Deployment Trigger is set to WEBHOOK only).'
+    });
+  }
+
   try {
     const deployment = await executeDeployment({
       repositoryId: id,

@@ -34,7 +34,7 @@ export const LocalChangesModal: React.FC<LocalChangesModalProps> = ({
             <AlertTriangle className="w-6 h-6 text-[#B87333]" />
           </div>
           <div>
-            <h3 className="text-lg font-serif italic font-bold text-[#4A5D45]">Local Changes Detected</h3>
+            <h3 className="text-lg font-serif font-bold text-[#4A5D45]">Local Changes Detected</h3>
             <p className="text-xs text-[#B87333] font-medium">Working tree in '{repoName}' has uncommitted files</p>
           </div>
         </div>

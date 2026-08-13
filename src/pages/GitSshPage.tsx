@@ -93,7 +93,7 @@ export const GitSshPage: React.FC = () => {
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>
-          <h2 className="text-2xl font-serif italic text-[#4A5D45] tracking-tight">Git & SSH Identity Manager</h2>
+          <h2 className="text-2xl font-serif text-[#4A5D45] tracking-tight">Git & SSH Identity Manager</h2>
           <p className="text-xs text-[#8C857E] mt-0.5">Execution user credentials, SSH deploy keys, and GitHub connectivity diagnostics</p>
         </div>
         <button
@@ -116,7 +116,7 @@ export const GitSshPage: React.FC = () => {
         {/* Execution User Identity Box */}
         <div className="p-5 rounded-[28px] bg-white border border-[#E5E0D8] shadow-sm space-y-3">
           <div className="flex items-center justify-between">
-            <h3 className="text-sm font-serif italic font-bold text-[#4A5D45] flex items-center gap-2">
+            <h3 className="text-sm font-serif font-bold text-[#4A5D45] flex items-center gap-2">
               <UserCheck className="w-4 h-4 text-[#4A5D45]" /> Execution User
             </h3>
             <span className="inline-flex items-center gap-1 text-[11px] font-mono font-bold text-[#3D4F38] bg-[#82937E]/20 px-2.5 py-0.5 rounded-lg border border-[#82937E]/30">
@@ -139,7 +139,7 @@ export const GitSshPage: React.FC = () => {
         {/* Git Executable Box */}
         <div className="p-5 rounded-[28px] bg-white border border-[#E5E0D8] shadow-sm space-y-3">
           <div className="flex items-center justify-between">
-            <h3 className="text-sm font-serif italic font-bold text-[#4A5D45] flex items-center gap-2">
+            <h3 className="text-sm font-serif font-bold text-[#4A5D45] flex items-center gap-2">
               <Terminal className="w-4 h-4 text-[#82937E]" /> System Git CLI
             </h3>
             {status?.gitInstalled ? (
@@ -164,7 +164,7 @@ export const GitSshPage: React.FC = () => {
         {/* SSH Key Box */}
         <div className="p-5 rounded-[28px] bg-white border border-[#E5E0D8] shadow-sm space-y-3">
           <div className="flex items-center justify-between">
-            <h3 className="text-sm font-serif italic font-bold text-[#4A5D45] flex items-center gap-2">
+            <h3 className="text-sm font-serif font-bold text-[#4A5D45] flex items-center gap-2">
               <Key className="w-4 h-4 text-[#B87333]" /> SSH Key Status
             </h3>
             {status?.privateKeyExists ? (
@@ -192,7 +192,7 @@ export const GitSshPage: React.FC = () => {
         {!status?.privateKeyExists ? (
           <div className="flex items-center justify-between">
             <div>
-              <h3 className="text-sm font-serif italic font-bold text-[#4A5D45]">Generate SSH Ed25519 Key</h3>
+              <h3 className="text-sm font-serif font-bold text-[#4A5D45]">Generate SSH Ed25519 Key</h3>
               <p className="text-xs text-[#8C857E]">Create a secure key pair for system user '{status?.executionUser || 'nova'}'</p>
             </div>
             <button
@@ -208,7 +208,7 @@ export const GitSshPage: React.FC = () => {
           <div className="space-y-3">
             <div className="flex items-center justify-between">
               <div>
-                <h3 className="text-sm font-serif italic font-bold text-[#4A5D45]">Existing Key Detected</h3>
+                <h3 className="text-sm font-serif font-bold text-[#4A5D45]">Existing Key Detected</h3>
                 <p className="text-xs text-[#8C857E]">Key is active at <code>{status?.keyPath}</code>. Re-generating will overwrite this key.</p>
               </div>
               <div className="flex items-center gap-2">
@@ -239,7 +239,7 @@ export const GitSshPage: React.FC = () => {
         <div className="p-5 rounded-[28px] bg-white border border-[#E5E0D8] shadow-sm space-y-3">
           <div className="flex items-center justify-between">
             <div>
-              <h3 className="text-sm font-serif italic font-bold text-[#4A5D45]">SSH Public Key (Deploy Key)</h3>
+              <h3 className="text-sm font-serif font-bold text-[#4A5D45]">SSH Public Key (Deploy Key)</h3>
               <p className="text-xs text-[#8C857E]">Add this public key as a Deploy Key in GitHub repository settings</p>
             </div>
             <button
@@ -264,7 +264,7 @@ export const GitSshPage: React.FC = () => {
       <div className="p-5 rounded-[28px] bg-white border border-[#E5E0D8] shadow-sm space-y-4">
         <div className="flex items-center justify-between">
           <div>
-            <h3 className="text-sm font-serif italic font-bold text-[#4A5D45]">Test GitHub Connection</h3>
+            <h3 className="text-sm font-serif font-bold text-[#4A5D45]">Test GitHub Connection</h3>
             <p className="text-xs text-[#8C857E]">Executes SSH authentication test as '{status?.executionUser || 'nova'}' against git@github.com</p>
           </div>
           <button

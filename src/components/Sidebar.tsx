@@ -40,7 +40,7 @@ export const Sidebar: React.FC<SidebarProps> = ({ activeTab, setActiveTab, user,
       <div>
         {/* Logo / Header */}
         <div className="p-5 border-b border-[#E5E0D8] flex items-center gap-3">
-          <div className="w-9 h-9 rounded-full bg-[#4A5D45] flex items-center justify-center text-white font-serif italic text-lg shadow-sm shrink-0">
+          <div className="w-9 h-9 rounded-full bg-[#4A5D45] flex items-center justify-center text-white font-serif text-lg shadow-sm shrink-0">
             H
           </div>
           <div>
@@ -78,7 +78,7 @@ export const Sidebar: React.FC<SidebarProps> = ({ activeTab, setActiveTab, user,
       {/* User Footer */}
       <div className="p-4 border-t border-[#E5E0D8] bg-[#EAE4DC]/60 flex items-center justify-between">
         <div className="flex items-center gap-2.5 overflow-hidden">
-          <div className="w-8 h-8 rounded-full bg-[#D4A373] border-2 border-white flex items-center justify-center text-xs font-serif italic font-bold text-white shadow-sm shrink-0">
+          <div className="w-8 h-8 rounded-full bg-[#D4A373] border-2 border-white flex items-center justify-center text-xs font-serif font-bold text-white shadow-sm shrink-0">
             {user?.username ? user.username.charAt(0).toUpperCase() : 'A'}
           </div>
           <div className="truncate text-xs">

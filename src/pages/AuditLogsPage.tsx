@@ -36,7 +36,7 @@ export const AuditLogsPage: React.FC = () => {
       {/* Header */}
       <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
         <div>
-          <h2 className="text-2xl font-serif italic text-[#4A5D45] tracking-tight">Audit Log Stream</h2>
+          <h2 className="text-2xl font-serif text-[#4A5D45] tracking-tight">Audit Log Stream</h2>
           <p className="text-xs text-[#8C857E] mt-0.5">Security history and administrative execution audit record</p>
         </div>
 
@@ -91,7 +91,7 @@ export const AuditLogsPage: React.FC = () => {
                         {log.action}
                       </span>
                     </td>
-                    <td className="py-3.5 px-3 font-serif italic text-sm font-semibold text-[#4A5D45]">
+                    <td className="py-3.5 px-3 font-serif text-sm font-semibold text-[#4A5D45]">
                       {log.repository_name || (log.repository_id ? `#${log.repository_id}` : '—')}
                     </td>
                     <td className="py-3.5 px-3 text-[#6E6760] font-sans max-w-xs truncate">

@@ -202,7 +202,7 @@ export const AddRepoWizard: React.FC<AddRepoWizardProps> = ({ onClose, onSuccess
         {/* Header */}
         <div className="flex items-center justify-between px-6 py-4 border-b border-[#E5E0D8] bg-[#F3EFEA]">
           <div>
-            <h3 className="text-base font-serif italic font-bold text-[#4A5D45]">Add New Git Repository</h3>
+            <h3 className="text-base font-serif font-bold text-[#4A5D45]">Add New Git Repository</h3>
             <p className="text-xs text-[#8C857E]">Step {step} of 5: {getStepTitle(step)}</p>
           </div>
           <button
@@ -388,7 +388,7 @@ export const AddRepoWizard: React.FC<AddRepoWizardProps> = ({ onClose, onSuccess
 
                   {/* Mode Selector (CLONE vs CONNECT) */}
                   <div className="p-4 rounded-2xl bg-[#F3EFEA] border border-[#E5E0D8] space-y-3 text-xs">
-                    <span className="font-serif italic font-bold text-[#4A5D45] block">Repository Registration Mode</span>
+                    <span className="font-serif font-bold text-[#4A5D45] block">Repository Registration Mode</span>
                     
                     <div className="grid grid-cols-2 gap-3">
                       <button
@@ -453,7 +453,7 @@ export const AddRepoWizard: React.FC<AddRepoWizardProps> = ({ onClose, onSuccess
               <div className="p-4 rounded-2xl bg-[#F3EFEA] border border-[#E5E0D8] space-y-3 text-xs">
                 <div className="flex items-center justify-between">
                   <div>
-                    <h4 className="font-serif italic font-bold text-[#4A5D45]">System & SSH Diagnostics</h4>
+                    <h4 className="font-serif font-bold text-[#4A5D45]">System & SSH Diagnostics</h4>
                     <p className="text-[#8C857E] text-[11px]">Comprehensive check for user '{executionUser}' and GitHub keys.</p>
                   </div>
                   <button
@@ -623,7 +623,7 @@ export const AddRepoWizard: React.FC<AddRepoWizardProps> = ({ onClose, onSuccess
           {step === 5 && (
             <div className="space-y-4">
               <div className="p-4 rounded-2xl bg-[#F3EFEA] border border-[#E5E0D8] space-y-3 text-xs">
-                <h4 className="font-serif italic font-bold text-[#4A5D45] text-sm border-b border-[#E5E0D8] pb-2">Review Configuration</h4>
+                <h4 className="font-serif font-bold text-[#4A5D45] text-sm border-b border-[#E5E0D8] pb-2">Review Configuration</h4>
 
                 <div className="grid grid-cols-2 gap-3 text-[#2C2C2C]">
                   <div>

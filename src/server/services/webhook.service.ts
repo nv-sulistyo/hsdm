@@ -96,6 +96,18 @@ export async function processGithubWebhook(options: {
     };
   }
 
+  // Check Deployment Trigger setting (MANUAL / WEBHOOK / BOTH)
+  const trigger = repo.deployment_trigger || 'BOTH';
+  if (trigger === 'MANUAL') {
+    db.prepare('UPDATE webhook_events SET processed_at = ?, status = ? WHERE id = ?')
+      .run(now, 'IGNORED_TRIGGER_MANUAL', eventRecordId);
+
+    return {
+      status: 200,
+      body: { message: 'Webhook signature verified, but Deployment Trigger is set to MANUAL only. Ignored.', deploymentTriggered: false }
+    };
+  }
+
   // Check payload branch ref (e.g., refs/heads/main)
   const targetRef = `refs/heads/${repo.branch}`;
   const payloadRef = payload?.ref || '';

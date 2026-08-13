@@ -34,10 +34,10 @@ export const LoginPage: React.FC<LoginPageProps> = ({ onLoginSuccess }) => {
     <div className="min-h-screen bg-[#F9F6F2] flex items-center justify-center p-4 text-[#2C2C2C] font-sans">
       <div className="w-full max-w-md bg-white border border-[#E5E0D8] rounded-[28px] shadow-sm p-8">
         <div className="flex flex-col items-center text-center mb-8">
-          <div className="w-14 h-14 rounded-full bg-[#4A5D45] text-white flex items-center justify-center font-serif italic text-2xl shadow-md mb-4">
+          <div className="w-14 h-14 rounded-full bg-[#4A5D45] text-white flex items-center justify-center font-serif text-2xl shadow-md mb-4">
             H
           </div>
-          <h1 className="text-2xl font-serif italic tracking-tight text-[#4A5D45]">
+          <h1 className="text-2xl font-serif tracking-tight text-[#4A5D45]">
             Home Server Deploy Manager
           </h1>
           <p className="text-xs text-[#8C857E] mt-1 font-medium">

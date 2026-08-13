@@ -161,7 +161,7 @@ export const SettingsPage: React.FC<SettingsPageProps> = ({ onAccountUpdated }) 
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>
-          <h2 className="text-2xl font-serif italic text-[#4A5D45] tracking-tight">System Settings</h2>
+          <h2 className="text-2xl font-serif text-[#4A5D45] tracking-tight">System Settings</h2>
           <p className="text-xs text-[#8C857E] mt-0.5">Execution user, Allowed Deploy Roots, and server security boundaries</p>
         </div>
         <button
@@ -193,7 +193,7 @@ export const SettingsPage: React.FC<SettingsPageProps> = ({ onAccountUpdated }) 
         <div className="flex items-center gap-2">
           <UserCheck className="w-5 h-5 text-[#4A5D45]" />
           <div>
-            <h3 className="text-sm font-serif italic font-bold text-[#4A5D45]">System Execution User</h3>
+            <h3 className="text-sm font-serif font-bold text-[#4A5D45]">System Execution User</h3>
             <p className="text-xs text-[#8C857E]">All Git operations and deployment hooks will execute under this Linux user environment</p>
           </div>
         </div>
@@ -226,7 +226,7 @@ export const SettingsPage: React.FC<SettingsPageProps> = ({ onAccountUpdated }) 
         <div className="flex items-center gap-2">
           <FolderCheck className="w-5 h-5 text-[#82937E]" />
           <div>
-            <h3 className="text-sm font-serif italic font-bold text-[#4A5D45]">Allowed Deploy Roots</h3>
+            <h3 className="text-sm font-serif font-bold text-[#4A5D45]">Allowed Deploy Roots</h3>
             <p className="text-xs text-[#8C857E]">Strict path boundaries where Git repositories are allowed to be cloned/pulled</p>
           </div>
         </div>
@@ -275,7 +275,7 @@ export const SettingsPage: React.FC<SettingsPageProps> = ({ onAccountUpdated }) 
 
       {/* System Paths Box */}
       <div className="p-5 rounded-[28px] bg-white border border-[#E5E0D8] shadow-sm space-y-4">
-        <h3 className="text-sm font-serif italic font-bold text-[#4A5D45]">System Binary & SSH Paths</h3>
+        <h3 className="text-sm font-serif font-bold text-[#4A5D45]">System Binary & SSH Paths</h3>
 
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4 text-xs">
           <div>
@@ -325,7 +325,7 @@ export const SettingsPage: React.FC<SettingsPageProps> = ({ onAccountUpdated }) 
         <div className="flex items-center gap-2">
           <UserCog className="w-5 h-5 text-[#B87333]" />
           <div>
-            <h3 className="text-sm font-serif italic font-bold text-[#4A5D45]">Account Settings</h3>
+            <h3 className="text-sm font-serif font-bold text-[#4A5D45]">Account Settings</h3>
             <p className="text-xs text-[#8C857E]">Change the administrator username and password</p>
           </div>
         </div>

@@ -7,22 +7,36 @@ export const WebhooksPage: React.FC = () => {
   const [repositories, setRepositories] = useState<Repository[]>([]);
   const [webhookHistory, setWebhookHistory] = useState<WebhookEvent[]>([]);
   const [loading, setLoading] = useState(true);
+  const [reposError, setReposError] = useState('');
+  const [historyError, setHistoryError] = useState('');
   const [copiedId, setCopiedId] = useState<string | null>(null);
 
   const fetchData = async () => {
     setLoading(true);
-    try {
-      const [repos, history] = await Promise.all([
-        api.getRepositories(),
-        api.getWebhookHistory(50)
-      ]);
-      setRepositories(repos);
-      setWebhookHistory(history);
-    } catch (err) {
-      console.error('Failed to fetch webhook data:', err);
-    } finally {
-      setLoading(false);
+    const [reposRes, historyRes] = await Promise.allSettled([
+      api.getRepositories(),
+      api.getWebhookHistory(50)
+    ]);
+
+    if (reposRes.status === 'fulfilled') {
+      setRepositories(reposRes.value);
+      setReposError('');
+    } else {
+      console.error('Failed to fetch repositories:', reposRes.reason);
+      setRepositories([]);
+      setReposError('Failed to load repositories. Please try again.');
     }
+
+    if (historyRes.status === 'fulfilled') {
+      setWebhookHistory(historyRes.value);
+      setHistoryError('');
+    } else {
+      console.error('Failed to fetch webhook history:', historyRes.reason);
+      setWebhookHistory([]);
+      setHistoryError('Failed to load webhook events. Please try again.');
+    }
+
+    setLoading(false);
   };
 
   useEffect(() => {
@@ -45,7 +59,7 @@ export const WebhooksPage: React.FC = () => {
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>
-          <h2 className="text-2xl font-serif italic text-[#4A5D45] tracking-tight">GitHub Webhook Manager</h2>
+          <h2 className="text-2xl font-serif text-[#4A5D45] tracking-tight">GitHub Webhook Manager</h2>
           <p className="text-xs text-[#8C857E] mt-0.5">HMAC SHA-256 verified automated push triggers for server deployments</p>
         </div>
         <button
@@ -59,16 +73,18 @@ export const WebhooksPage: React.FC = () => {
 
       {/* Webhook URLs per Repository */}
       <div className="p-5 rounded-[28px] bg-white border border-[#E5E0D8] shadow-sm space-y-4">
-        <h3 className="text-sm font-serif italic font-bold text-[#4A5D45]">Repository Webhook Endpoints</h3>
+        <h3 className="text-sm font-serif font-bold text-[#4A5D45]">Repository Webhook Endpoints</h3>
 
         <div className="space-y-3">
-          {repositories.length > 0 ? (
+          {reposError ? (
+            <div className="py-4 text-center text-xs text-[#9E391C] bg-[#C86D51]/10 rounded-2xl border border-[#C86D51]/20">{reposError}</div>
+          ) : repositories.length > 0 ? (
             repositories.map((repo) => {
               const url = getWebhookUrl(repo.id);
               return (
                 <div key={repo.id} className="p-4 rounded-2xl bg-[#F3EFEA] border border-[#E5E0D8] space-y-2">
                   <div className="flex items-center justify-between">
-                    <span className="font-serif italic font-bold text-sm text-[#4A5D45]">{repo.name}</span>
+                    <span className="font-serif font-bold text-sm text-[#4A5D45]">{repo.name}</span>
                     <span className={`text-[10px] font-semibold px-2.5 py-0.5 rounded-lg ${repo.webhook_enabled ? 'bg-[#82937E]/20 text-[#3D4F38] border border-[#82937E]/30' : 'bg-white text-[#8C857E] border border-[#E5E0D8]'}`}>
                       {repo.webhook_enabled ? 'WEBHOOK ENABLED' : 'WEBHOOK DISABLED'}
                     </span>
@@ -124,7 +140,7 @@ export const WebhooksPage: React.FC = () => {
 
       {/* GitHub Setup Guide Box */}
       <div className="p-5 rounded-[24px] bg-[#F3EFEA] border border-[#E5E0D8] text-xs text-[#2C2C2C] space-y-2">
-        <h4 className="font-serif italic font-bold text-[#4A5D45] text-sm flex items-center gap-2">
+        <h4 className="font-serif font-bold text-[#4A5D45] text-sm flex items-center gap-2">
           <Code className="w-4 h-4 text-[#82937E]" /> GitHub Webhook Setup Guide
         </h4>
         <ol className="list-decimal list-inside space-y-1 text-[#6E6760] leading-relaxed">
@@ -138,10 +154,12 @@ export const WebhooksPage: React.FC = () => {
 
       {/* Webhook Events History Table */}
       <div className="p-5 rounded-[28px] bg-white border border-[#E5E0D8] shadow-sm">
-        <h3 className="text-sm font-serif italic font-bold text-[#4A5D45] mb-4">Webhook Delivery Events</h3>
+        <h3 className="text-sm font-serif font-bold text-[#4A5D45] mb-4">Webhook Delivery Events</h3>
 
         <div className="overflow-x-auto">
-          {webhookHistory.length > 0 ? (
+          {historyError ? (
+            <div className="py-8 text-center text-xs text-[#9E391C] bg-[#C86D51]/10 rounded-2xl border border-[#C86D51]/20">{historyError}</div>
+          ) : webhookHistory.length > 0 ? (
             <table className="w-full text-left text-xs text-[#2C2C2C]">
               <thead className="bg-[#F3EFEA] text-[#4A5D45] text-[11px] uppercase font-semibold border-b border-[#E5E0D8]">
                 <tr>
@@ -155,7 +173,7 @@ export const WebhooksPage: React.FC = () => {
               <tbody className="divide-y divide-[#E5E0D8]">
                 {webhookHistory.map((evt) => (
                   <tr key={evt.id} className="hover:bg-[#F3EFEA]/60 transition">
-                    <td className="py-3 px-3 font-serif italic font-semibold text-[#4A5D45]">
+                    <td className="py-3 px-3 font-serif font-semibold text-[#4A5D45]">
                       {evt.repository_name || `#${evt.repository_id}`}
                     </td>
                     <td className="py-3 px-3 font-mono text-[#8C5828] font-semibold">{evt.event_type}</td>

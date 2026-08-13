@@ -80,7 +80,7 @@ export const GuidePage: React.FC = () => {
             </button>
           </div>
 
-          <h2 className="text-3xl font-serif italic tracking-tight font-bold">
+          <h2 className="text-3xl font-serif tracking-tight font-bold">
             Home Server Deploy Manager
           </h2>
           <p className="text-xs md:text-sm text-[#E5E0D8] leading-relaxed">
@@ -162,7 +162,7 @@ export const GuidePage: React.FC = () => {
       {activeSection === 'quickstart' && (
         <div className="space-y-6">
           <div className="p-5 rounded-[28px] bg-white border border-[#E5E0D8] shadow-sm space-y-4">
-            <h3 className="text-lg font-serif italic font-bold text-[#4A5D45] flex items-center gap-2">
+            <h3 className="text-lg font-serif font-bold text-[#4A5D45] flex items-center gap-2">
               <Zap className="w-5 h-5 text-[#B87333]" /> Langkah-Langkah Konfigurasi Awal (3 Menit)
             </h3>
             <p className="text-xs text-[#8C857E]">
@@ -232,7 +232,7 @@ export const GuidePage: React.FC = () => {
       {activeSection === 'workflow' && (
         <div className="space-y-6">
           <div className="p-5 rounded-[28px] bg-white border border-[#E5E0D8] shadow-sm space-y-4">
-            <h3 className="text-lg font-serif italic font-bold text-[#4A5D45] flex items-center gap-2">
+            <h3 className="text-lg font-serif font-bold text-[#4A5D45] flex items-center gap-2">
               <FolderGit2 className="w-5 h-5 text-[#4A5D45]" /> Detail Cara Menambahkan & Mengelola Repositori
             </h3>
             <p className="text-xs text-[#8C857E]">
@@ -318,7 +318,7 @@ export const GuidePage: React.FC = () => {
       {activeSection === 'webhooks' && (
         <div className="space-y-6">
           <div className="p-5 rounded-[28px] bg-white border border-[#E5E0D8] shadow-sm space-y-4">
-            <h3 className="text-lg font-serif italic font-bold text-[#4A5D45] flex items-center gap-2">
+            <h3 className="text-lg font-serif font-bold text-[#4A5D45] flex items-center gap-2">
               <Webhook className="w-5 h-5 text-[#82937E]" /> Panduan Integrasi GitHub Webhook
             </h3>
             <p className="text-xs text-[#8C857E]">
@@ -367,7 +367,7 @@ export const GuidePage: React.FC = () => {
       {activeSection === 'security' && (
         <div className="space-y-6">
           <div className="p-5 rounded-[28px] bg-white border border-[#E5E0D8] shadow-sm space-y-4">
-            <h3 className="text-lg font-serif italic font-bold text-[#4A5D45] flex items-center gap-2">
+            <h3 className="text-lg font-serif font-bold text-[#4A5D45] flex items-center gap-2">
               <ShieldCheck className="w-5 h-5 text-[#4A5D45]" /> Arsitektur & Prinsip Keamanan Sistem
             </h3>
             <p className="text-xs text-[#8C857E]">
@@ -423,7 +423,7 @@ export const GuidePage: React.FC = () => {
       {activeSection === 'faq' && (
         <div className="space-y-6">
           <div className="p-5 rounded-[28px] bg-white border border-[#E5E0D8] shadow-sm space-y-4">
-            <h3 className="text-lg font-serif italic font-bold text-[#4A5D45] flex items-center gap-2">
+            <h3 className="text-lg font-serif font-bold text-[#4A5D45] flex items-center gap-2">
               <HelpCircle className="w-5 h-5 text-[#B87333]" /> Pertanyaan Umum & Pemecahan Masalah (Troubleshooting)
             </h3>
 

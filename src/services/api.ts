@@ -107,7 +107,7 @@ export const api = {
   getDeployment: (id: number) => request<Deployment>(`/api/deployments/${id}`),
 
   // Webhooks
-  getWebhookHistory: (limit = 100) => request<WebhookEvent[]>(`/api/webhooks/history?limit=${limit}`),
+  getWebhookHistory: (limit = 100) => request<WebhookEvent[]>(`/webhooks/history?limit=${limit}`),
 
   // System & SSH
   inspectDirectory: (path: string, git_url?: string) =>

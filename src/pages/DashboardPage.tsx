@@ -52,7 +52,7 @@ export const DashboardPage: React.FC<DashboardPageProps> = ({ onNavigateToRepo, 
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>
-          <h2 className="text-2xl font-serif italic text-[#4A5D45] tracking-tight">Home Server Overview</h2>
+          <h2 className="text-2xl font-serif text-[#4A5D45] tracking-tight">Home Server Overview</h2>
           <p className="text-xs text-[#8C857E] mt-0.5">Git repository automation activity & system deployment health</p>
         </div>
         <button
@@ -93,7 +93,7 @@ export const DashboardPage: React.FC<DashboardPageProps> = ({ onNavigateToRepo, 
         <div className="p-5 rounded-[24px] bg-white border border-[#E5E0D8] flex items-center justify-between shadow-sm">
           <div>
             <span className="text-xs font-semibold text-[#8C857E]">Total Repositories</span>
-            <div className="text-2xl font-serif italic font-bold text-[#4A5D45] mt-1">
+            <div className="text-2xl font-serif font-bold text-[#4A5D45] mt-1">
               {stats ? stats.totalRepositories : 0}
             </div>
           </div>
@@ -105,7 +105,7 @@ export const DashboardPage: React.FC<DashboardPageProps> = ({ onNavigateToRepo, 
         <div className="p-5 rounded-[24px] bg-white border border-[#E5E0D8] flex items-center justify-between shadow-sm">
           <div>
             <span className="text-xs font-semibold text-[#8C857E]">Auto Deploy Active</span>
-            <div className="text-2xl font-serif italic font-bold text-[#D4A373] mt-1">
+            <div className="text-2xl font-serif font-bold text-[#D4A373] mt-1">
               {stats ? stats.autoDeployCount : 0}
             </div>
           </div>
@@ -117,7 +117,7 @@ export const DashboardPage: React.FC<DashboardPageProps> = ({ onNavigateToRepo, 
         <div className="p-5 rounded-[24px] bg-white border border-[#E5E0D8] flex items-center justify-between shadow-sm">
           <div>
             <span className="text-xs font-semibold text-[#8C857E]">Successful Deployments</span>
-            <div className="text-2xl font-serif italic font-bold text-[#4A5D45] mt-1">
+            <div className="text-2xl font-serif font-bold text-[#4A5D45] mt-1">
               {stats ? stats.successfulDeployments : 0}
             </div>
           </div>
@@ -129,7 +129,7 @@ export const DashboardPage: React.FC<DashboardPageProps> = ({ onNavigateToRepo, 
         <div className="p-5 rounded-[24px] bg-white border border-[#E5E0D8] flex items-center justify-between shadow-sm">
           <div>
             <span className="text-xs font-semibold text-[#8C857E]">Failed Deployments</span>
-            <div className="text-2xl font-serif italic font-bold text-[#C86D51] mt-1">
+            <div className="text-2xl font-serif font-bold text-[#C86D51] mt-1">
               {stats ? stats.failedDeployments : 0}
             </div>
           </div>
@@ -145,7 +145,7 @@ export const DashboardPage: React.FC<DashboardPageProps> = ({ onNavigateToRepo, 
         <div className="lg:col-span-2 p-5 rounded-[24px] bg-white border border-[#E5E0D8] flex flex-col shadow-sm">
           <div className="flex items-center justify-between mb-4">
             <div>
-              <h3 className="text-base font-serif italic text-[#4A5D45]">Recent Deployments</h3>
+              <h3 className="text-base font-serif text-[#4A5D45]">Recent Deployments</h3>
               <p className="text-[11px] text-[#8C857E]">Latest manual & automated deployment triggers</p>
             </div>
             <button
@@ -208,7 +208,7 @@ export const DashboardPage: React.FC<DashboardPageProps> = ({ onNavigateToRepo, 
         {/* Recent Audit Log Stream */}
         <div className="p-5 rounded-[24px] bg-white border border-[#E5E0D8] flex flex-col shadow-sm">
           <div className="mb-4">
-            <h3 className="text-base font-serif italic text-[#4A5D45]">Audit Stream</h3>
+            <h3 className="text-base font-serif text-[#4A5D45]">Audit Stream</h3>
             <p className="text-[11px] text-[#8C857E]">Security & administrator actions</p>
           </div>
 

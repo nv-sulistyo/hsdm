@@ -39,7 +39,7 @@ export const DeploymentsPage: React.FC = () => {
       {/* Header */}
       <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
         <div>
-          <h2 className="text-2xl font-serif italic text-[#4A5D45] tracking-tight">Deployment Logs</h2>
+          <h2 className="text-2xl font-serif text-[#4A5D45] tracking-tight">Deployment Logs</h2>
           <p className="text-xs text-[#8C857E] mt-0.5">Complete execution record of all manual & automated pull deployments</p>
         </div>
 
@@ -85,7 +85,7 @@ export const DeploymentsPage: React.FC = () => {
                 {filtered.map((dep) => (
                   <tr key={dep.id} className="hover:bg-[#F3EFEA]/60 transition">
                     <td className="py-3.5 px-3 font-mono font-bold text-[#8C857E]">#{dep.id}</td>
-                    <td className="py-3.5 px-3 font-serif italic text-sm font-semibold text-[#4A5D45]">
+                    <td className="py-3.5 px-3 font-serif text-sm font-semibold text-[#4A5D45]">
                       {dep.repository_name || `Repo #${dep.repository_id}`}
                     </td>
                     <td className="py-3.5 px-3">

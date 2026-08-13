@@ -61,7 +61,7 @@ export default function App() {
   if (loadingUser) {
     return (
       <div className="min-h-screen bg-[#F9F6F2] flex flex-col items-center justify-center p-4 text-[#2C2C2C]">
-        <div className="w-12 h-12 rounded-full bg-[#82937E] flex items-center justify-center text-white font-serif italic text-xl shadow-md mb-4 animate-pulse">
+        <div className="w-12 h-12 rounded-full bg-[#82937E] flex items-center justify-center text-white font-serif text-xl shadow-md mb-4 animate-pulse">
           T
         </div>
         <div className="flex items-center gap-2 text-sm font-medium text-[#4A5D45]">

@@ -31,7 +31,7 @@ export const LogViewerModal: React.FC<LogViewerModalProps> = ({ deployment, onCl
             </div>
             <div>
               <div className="flex items-center gap-2">
-                <h3 className="text-base font-serif italic font-bold text-[#4A5D45]">
+                <h3 className="text-base font-serif font-bold text-[#4A5D45]">
                   Deployment #{deployment.id}
                 </h3>
                 <span className="text-sm font-medium text-[#8C857E]">

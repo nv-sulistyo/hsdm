@@ -243,7 +243,7 @@ export const RepositoriesPage: React.FC = () => {
       {/* Top Header & Search bar */}
       <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
         <div>
-          <h2 className="text-2xl font-serif italic text-[#4A5D45] tracking-tight">Repository Manager</h2>
+          <h2 className="text-2xl font-serif text-[#4A5D45] tracking-tight">Repository Manager</h2>
           <p className="text-xs text-[#8C857E] mt-0.5">Automate Git clones, fetches, pulls & post-pull deployments</p>
         </div>
 
@@ -294,7 +294,7 @@ export const RepositoriesPage: React.FC = () => {
               {/* Info Column */}
               <div className="space-y-2 flex-1 min-w-0">
                 <div className="flex items-center gap-3 flex-wrap">
-                  <h3 className="text-lg font-serif italic text-[#4A5D45] truncate">{repo.name}</h3>
+                  <h3 className="text-lg font-serif text-[#4A5D45] truncate">{repo.name}</h3>
                   <RepoStatusBadge status={repo.status} />
                   {repo.auto_deploy && (
                     <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-xl text-[10px] font-semibold bg-[#D4A373]/20 text-[#8C5828] border border-[#D4A373]/30">
@@ -345,8 +345,9 @@ export const RepositoriesPage: React.FC = () => {
                   <>
                     <button
                       onClick={() => handlePullNow(repo)}
-                      disabled={pullingRepoId === repo.id}
-                      className="px-3.5 py-1.5 rounded-xl text-xs font-semibold bg-[#4A5D45] hover:bg-[#3D4F38] text-white disabled:opacity-50 transition flex items-center gap-1.5 shadow-sm shadow-[#4A5D45]/20"
+                      disabled={pullingRepoId === repo.id || repo.deployment_trigger === 'WEBHOOK'}
+                      title={repo.deployment_trigger === 'WEBHOOK' ? 'Manual deployment disabled (Deployment Trigger: WEBHOOK only)' : 'Pull and deploy now'}
+                      className="px-3.5 py-1.5 rounded-xl text-xs font-semibold bg-[#4A5D45] hover:bg-[#3D4F38] text-white disabled:opacity-40 disabled:cursor-not-allowed transition flex items-center gap-1.5 shadow-sm shadow-[#4A5D45]/20"
                     >
                       <GitPullRequest className={`w-3.5 h-3.5 ${pullingRepoId === repo.id ? 'animate-spin' : ''}`} />
                       {pullingRepoId === repo.id ? 'Pulling...' : 'Pull Now'}
@@ -411,7 +412,7 @@ export const RepositoriesPage: React.FC = () => {
         ) : (
           <div className="p-12 text-center bg-white border border-[#E5E0D8] rounded-[24px] space-y-3 shadow-sm">
             <FolderGit2 className="w-10 h-10 text-[#82937E] mx-auto" />
-            <h3 className="text-base font-serif italic text-[#4A5D45]">No repositories registered</h3>
+            <h3 className="text-base font-serif text-[#4A5D45]">No repositories registered</h3>
             <p className="text-xs text-[#8C857E] max-w-sm mx-auto">
               Click 'Add Repository' to connect your first GitHub repository and automate deployments.
             </p>
@@ -457,7 +458,7 @@ export const RepositoriesPage: React.FC = () => {
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-xs animate-fade-in">
           <div className="w-full max-w-lg bg-white border border-[#E5E0D8] rounded-[28px] p-6 text-[#2C2C2C] space-y-4 shadow-xl">
             <div className="flex items-center justify-between border-b border-[#E5E0D8] pb-3">
-              <h3 className="text-base font-serif italic font-bold text-[#4A5D45]">Edit Repository: {editingRepo.name}</h3>
+              <h3 className="text-base font-serif font-bold text-[#4A5D45]">Edit Repository: {editingRepo.name}</h3>
               <button onClick={() => setEditingRepo(null)} className="text-[#8C857E] hover:text-[#2C2C2C]">
                 <X className="w-5 h-5" />
               </button>
@@ -580,7 +581,7 @@ export const RepositoriesPage: React.FC = () => {
           <div className="w-full max-w-md bg-white border border-[#C86D51]/30 rounded-[28px] p-6 text-[#2C2C2C] space-y-4 shadow-xl">
             <div className="flex items-center gap-3 text-[#C86D51]">
               <Trash2 className="w-6 h-6" />
-              <h3 className="text-base font-serif italic font-bold text-[#2C2C2C]">Delete Repository '{deletingRepo.name}'</h3>
+              <h3 className="text-base font-serif font-bold text-[#2C2C2C]">Delete Repository '{deletingRepo.name}'</h3>
             </div>
 
             <p className="text-xs text-[#6E6760] leading-relaxed">
@@ -627,7 +628,7 @@ export const RepositoriesPage: React.FC = () => {
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-xs animate-fade-in">
           <div className="w-full max-w-3xl bg-white border border-[#E5E0D8] rounded-[28px] p-6 text-[#2C2C2C] max-h-[85vh] flex flex-col shadow-xl">
             <div className="flex items-center justify-between border-b border-[#E5E0D8] pb-3 mb-4">
-              <h3 className="text-base font-serif italic font-bold text-[#4A5D45]">
+              <h3 className="text-base font-serif font-bold text-[#4A5D45]">
                 Deployment History: {repoHistoryModal.name}
               </h3>
               <button onClick={() => setRepoHistoryModal(null)} className="text-[#8C857E] hover:text-[#2C2C2C]">
@@ -669,7 +670,7 @@ export const RepositoriesPage: React.FC = () => {
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-xs animate-fade-in">
           <div className="w-full max-w-md bg-white border border-[#E5E0D8] rounded-[28px] p-6 text-[#2C2C2C] space-y-4 shadow-xl">
             <div className="flex items-center justify-between border-b border-[#E5E0D8] pb-3">
-              <h3 className="text-base font-serif italic font-bold text-[#4A5D45]">Branches: {branchesModalRepo.name}</h3>
+              <h3 className="text-base font-serif font-bold text-[#4A5D45]">Branches: {branchesModalRepo.name}</h3>
               <button onClick={() => setBranchesModalRepo(null)} className="text-[#8C857E] hover:text-[#2C2C2C]">
                 <X className="w-5 h-5" />
               </button>
