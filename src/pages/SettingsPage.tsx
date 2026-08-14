@@ -1,16 +1,26 @@
 import React, { useState, useEffect } from 'react';
 import { api } from '../services/api.js';
 import { AppSettings, SystemEnvironment, User, ActionTemplate } from '../types.js';
-import { Settings, Shield, Plus, Trash2, Check, AlertCircle, Save, FolderCheck, UserCheck, RefreshCw, CheckCircle2, UserCog, Terminal, Edit2, Lock, X, Database, Loader2 } from 'lucide-react';
+import { Settings, Shield, Plus, Trash2, Check, AlertCircle, Save, FolderCheck, UserCheck, RefreshCw, CheckCircle2, UserCog, Terminal, Edit2, Lock, X, Database, Loader2, Server } from 'lucide-react';
 
 interface SettingsPageProps {
   onAccountUpdated: (user: User, token: string) => void;
+}
+
+type SettingsTab = 'server' | 'account' | 'templates' | 'data';
+
+const SETTINGS_TABS: SettingsTab[] = ['server', 'account', 'templates', 'data'];
+
+function getSettingsTabFromHash(): SettingsTab {
+  const seg = window.location.hash.replace(/^#\/?/, '').split('/')[1] as SettingsTab;
+  return SETTINGS_TABS.includes(seg) ? seg : 'server';
 }
 
 export const SettingsPage: React.FC<SettingsPageProps> = ({ onAccountUpdated }) => {
   const [settings, setSettings] = useState<AppSettings | null>(null);
   const [systemEnv, setSystemEnv] = useState<SystemEnvironment | null>(null);
   const [loading, setLoading] = useState(true);
+  const [activeTab, setActiveTab] = useState<SettingsTab>(getSettingsTabFromHash);
 
   // Execution user state
   const [executionUser, setExecutionUser] = useState('nova');
@@ -117,6 +127,22 @@ export const SettingsPage: React.FC<SettingsPageProps> = ({ onAccountUpdated }) 
       .then(setTemplates)
       .catch(err => console.error('Failed to load action templates:', err));
   }, []);
+
+  useEffect(() => {
+    const onHashChange = () => {
+      const top = window.location.hash.replace(/^#\/?/, '').split('/')[0];
+      if (top === 'settings') setActiveTab(getSettingsTabFromHash());
+    };
+    window.addEventListener('hashchange', onHashChange);
+    return () => window.removeEventListener('hashchange', onHashChange);
+  }, []);
+
+  const selectTab = (tab: SettingsTab) => {
+    setActiveTab(tab);
+    const target = `#settings/${tab}`;
+    if (window.location.hash === target) return;
+    window.location.hash = target;
+  };
 
   const fetchTemplates = async () => {
     const t = await api.getActionTemplates();
@@ -291,6 +317,30 @@ export const SettingsPage: React.FC<SettingsPageProps> = ({ onAccountUpdated }) 
         </div>
       )}
 
+      {/* Settings Section Navigation */}
+      <div className="flex flex-wrap gap-2">
+        {[
+          { id: 'server' as SettingsTab, label: 'Server & Paths', icon: Server },
+          { id: 'account' as SettingsTab, label: 'Account', icon: UserCog },
+          { id: 'templates' as SettingsTab, label: 'Action Templates', icon: Terminal },
+          { id: 'data' as SettingsTab, label: 'Data & Logs', icon: Database }
+        ].map(tab => (
+          <button
+            key={tab.id}
+            onClick={() => selectTab(tab.id)}
+            className={`inline-flex items-center gap-1.5 px-4 py-2 rounded-xl text-xs font-semibold transition ${
+              activeTab === tab.id
+                ? 'bg-[#4A5D45] text-white shadow-sm'
+                : 'bg-white text-[#6E6760] hover:bg-[#F3EFEA] border border-[#E5E0D8]'
+            }`}
+          >
+            <tab.icon className="w-3.5 h-3.5" /> {tab.label}
+          </button>
+        ))}
+      </div>
+
+      {activeTab === 'server' && (
+      <>
       {/* Execution User Configuration Box */}
       <div className="p-5 rounded-[28px] bg-white border border-[#E5E0D8] shadow-sm space-y-4">
         <div className="flex items-center gap-2">
@@ -422,7 +472,11 @@ export const SettingsPage: React.FC<SettingsPageProps> = ({ onAccountUpdated }) 
           </button>
         </div>
       </div>
+      </>
+      )}
 
+      {activeTab === 'account' && (
+      <>
       {/* Account Settings */}
       <div className="p-5 rounded-[28px] bg-white border border-[#E5E0D8] shadow-sm space-y-4">
         <div className="flex items-center gap-2">
@@ -504,7 +558,11 @@ export const SettingsPage: React.FC<SettingsPageProps> = ({ onAccountUpdated }) 
           </button>
         </form>
       </div>
+      </>
+      )}
 
+      {activeTab === 'templates' && (
+      <>
       {/* Action Templates */}
       <div className="p-5 rounded-[28px] bg-white border border-[#E5E0D8] shadow-sm space-y-4">
         <div className="flex items-center justify-between gap-3">
@@ -651,7 +709,11 @@ export const SettingsPage: React.FC<SettingsPageProps> = ({ onAccountUpdated }) 
           )}
         </div>
       </div>
+      </>
+      )}
 
+      {activeTab === 'data' && (
+      <>
       {/* Data & Logs */}
       <div className="p-5 rounded-[28px] bg-white border border-[#E5E0D8] shadow-sm space-y-4">
         <div className="flex items-center gap-2">
@@ -705,6 +767,8 @@ export const SettingsPage: React.FC<SettingsPageProps> = ({ onAccountUpdated }) 
           </button>
         </div>
       </div>
+      </>
+      )}
     </div>
   );
 };

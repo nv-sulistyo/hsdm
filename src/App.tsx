@@ -19,11 +19,18 @@ import { GuidePage } from './pages/GuidePage.js';
 import { RefreshCw, Terminal } from 'lucide-react';
 import { Logo } from './components/Logo.js';
 
+const VALID_TABS: NavTab[] = ['dashboard', 'repositories', 'deployments', 'webhooks', 'git-ssh', 'settings', 'audit-logs', 'guide'];
+
+function getTabFromHash(): NavTab {
+  const seg = window.location.hash.replace(/^#\/?/, '').split('/')[0] as NavTab;
+  return VALID_TABS.includes(seg) ? seg : 'dashboard';
+}
+
 export default function App() {
   const [user, setUser] = useState<User | null>(null);
   const [token, setToken] = useState<string | null>(localStorage.getItem('auth_token'));
   const [loadingUser, setLoadingUser] = useState(true);
-  const [activeTab, setActiveTab] = useState<NavTab>('dashboard');
+  const [activeTab, setActiveTab] = useState<NavTab>(getTabFromHash);
 
   useEffect(() => {
     const checkAuth = async () => {
@@ -48,6 +55,20 @@ export default function App() {
     checkAuth();
   }, [token]);
 
+  useEffect(() => {
+    const onHashChange = () => setActiveTab(getTabFromHash());
+    window.addEventListener('hashchange', onHashChange);
+    return () => window.removeEventListener('hashchange', onHashChange);
+  }, []);
+
+  const navigateTab = (tab: NavTab) => {
+    setActiveTab(tab);
+    const target = tab === 'dashboard' ? '#' : `#${tab}`;
+    const current = window.location.hash;
+    if (current === target || (tab === 'dashboard' && current === '')) return;
+    window.location.hash = target;
+  };
+
   const handleLoginSuccess = (loggedInUser: User, newToken: string) => {
     setUser(loggedInUser);
     setToken(newToken);
@@ -57,6 +78,8 @@ export default function App() {
     localStorage.removeItem('auth_token');
     setToken(null);
     setUser(null);
+    history.replaceState(null, '', window.location.pathname + window.location.search);
+    setActiveTab('dashboard');
   };
 
   if (loadingUser) {
@@ -79,7 +102,7 @@ export default function App() {
     <div className="flex h-screen bg-[#F9F6F2] text-[#2C2C2C] overflow-hidden font-sans">
       <Sidebar
         activeTab={activeTab}
-        setActiveTab={setActiveTab}
+        setActiveTab={navigateTab}
         user={user}
         onLogout={handleLogout}
       />
@@ -87,8 +110,8 @@ export default function App() {
       <main className="flex-1 overflow-y-auto p-6 md:p-8 space-y-6">
         {activeTab === 'dashboard' && (
           <DashboardPage
-            onNavigateToRepo={() => setActiveTab('repositories')}
-            onNavigateToSsh={() => setActiveTab('git-ssh')}
+            onNavigateToRepo={() => navigateTab('repositories')}
+            onNavigateToSsh={() => navigateTab('git-ssh')}
           />
         )}
         {activeTab === 'repositories' && <RepositoriesPage />}
@@ -102,4 +125,3 @@ export default function App() {
     </div>
   );
 }
-

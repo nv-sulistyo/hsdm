@@ -129,6 +129,7 @@ export const api = {
       success: boolean;
       message: string;
       details: string;
+      authenticatedUser?: string | null;
       stepResults: { git: boolean; sshKey: boolean; connection: boolean };
     }>('/api/system/test-github', { method: 'POST' }),
   getSshKeyStatus: () =>

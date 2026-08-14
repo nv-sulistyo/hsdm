@@ -94,7 +94,7 @@ export const GitSshPage: React.FC = () => {
       <div className="flex items-center justify-between">
         <div>
           <h2 className="text-2xl font-serif text-[#4A5D45] tracking-tight">Git & SSH Identity Manager</h2>
-          <p className="text-xs text-[#8C857E] mt-0.5">Execution user credentials, SSH deploy keys, and GitHub connectivity diagnostics</p>
+          <p className="text-xs text-[#8C857E] mt-0.5">Execution user credentials, account SSH key, and GitHub connectivity diagnostics</p>
         </div>
         <button
           onClick={fetchStatus}
@@ -239,8 +239,10 @@ export const GitSshPage: React.FC = () => {
         <div className="p-5 rounded-[28px] bg-white border border-[#E5E0D8] shadow-sm space-y-3">
           <div className="flex items-center justify-between">
             <div>
-              <h3 className="text-sm font-serif font-bold text-[#4A5D45]">SSH Public Key (Deploy Key)</h3>
-              <p className="text-xs text-[#8C857E]">Add this public key as a Deploy Key in GitHub repository settings</p>
+              <h3 className="text-sm font-serif font-bold text-[#4A5D45]">SSH Public Key (Account Key)</h3>
+              <p className="text-xs text-[#8C857E]">
+                Add this key to your GitHub <strong>account</strong> (Settings &gt; SSH and GPG keys &gt; New SSH key) — one key applies to all your repositories. Do NOT add it as a per-repo Deploy Key: a deploy key can only be attached to one repository.
+              </p>
             </div>
             <button
               onClick={copyPublicKey}
@@ -289,6 +291,12 @@ export const GitSshPage: React.FC = () => {
               {testResult.success ? <CheckCircle2 className="w-5 h-5 text-[#4A5D45]" /> : <AlertCircle className="w-5 h-5 text-[#B87333]" />}
               <span>{testResult.message}</span>
             </div>
+
+            {testResult.success && testResult.authenticatedUser && (
+              <div className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-[#4A5D45]/10 border border-[#4A5D45]/20 text-[11px] font-semibold text-[#4A5D45]">
+                <UserCheck className="w-3.5 h-3.5" /> Authenticated as: <span className="font-mono">{testResult.authenticatedUser}</span>
+              </div>
+            )}
 
             <pre className="p-3.5 rounded-xl bg-[#F3EFEA] border border-[#E5E0D8] font-mono text-xs text-[#2C2C2C] whitespace-pre-wrap max-h-48 overflow-y-auto">
               {testResult.details}

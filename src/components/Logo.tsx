@@ -11,6 +11,6 @@ export const Logo: React.FC<LogoProps> = ({ size = 36, className }) => (
     width={size}
     height={size}
     alt="HSDM logo"
-    className={`rounded-[25%] object-cover ${className ?? ''}`}
+    className={`object-cover ${className ?? ''}`}
   />
 );

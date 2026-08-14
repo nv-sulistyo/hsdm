@@ -83,7 +83,7 @@ export const DashboardPage: React.FC<DashboardPageProps> = ({ onNavigateToRepo, 
               <p className="text-[#8C5828]">
                 {!sshStatus.gitInstalled
                   ? 'Git CLI executable is not found in PATH. Check Settings.'
-                  : `SSH Private Key is missing at ${sshStatus.keyPath}. Generate or upload your SSH key to enable GitHub access.`}
+                  : `SSH Private Key is missing at ${sshStatus.keyPath}. Generate or upload your SSH key, then add it to GitHub under Settings > SSH and GPG keys (account-level) to enable GitHub access.`}
               </p>
             </div>
           </div>

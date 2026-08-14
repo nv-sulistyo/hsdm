@@ -114,6 +114,7 @@ export async function testGithubConnection() {
         success: true,
         message: 'GitHub authentication successful!',
         details: combined.trim(),
+        authenticatedUser: parseAuthenticatedUser(combined),
         stepResults: {
           git: true,
           sshKey: true,
@@ -140,6 +141,7 @@ export async function testGithubConnection() {
         success: true,
         message: 'GitHub authentication successful!',
         details: output,
+        authenticatedUser: parseAuthenticatedUser(output),
         stepResults: {
           git: true,
           sshKey: true,
@@ -150,7 +152,7 @@ export async function testGithubConnection() {
 
     let errorSummary = 'GitHub connection failed.';
     if (output.includes('Permission denied (publickey)')) {
-      errorSummary = 'Permission denied (publickey). Make sure you have added your SSH Public Key to your GitHub account or repository deploy keys.';
+      errorSummary = 'Permission denied (publickey). Add this SSH public key to your GitHub account (Settings > SSH and GPG keys) so it applies to all repositories.';
     } else if (output.includes('Could not resolve hostname')) {
       errorSummary = 'Could not resolve github.com hostname. Check server DNS/internet connection.';
     }
@@ -203,4 +205,10 @@ export async function generateSshKey(options?: { force?: boolean }) {
   }
 
   return checkSshKeyStatus();
+}
+
+function parseAuthenticatedUser(output: string): string | null {
+  // GitHub SSH greeting: "Hi username! You've successfully authenticated..."
+  const match = output.match(/Hi\s+([A-Za-z0-9._-]+)!/);
+  return match ? match[1] : null;
 }

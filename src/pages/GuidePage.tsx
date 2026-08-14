@@ -23,9 +23,18 @@ import {
   UserCheck
 } from 'lucide-react';
 
+type GuideSection = 'quickstart' | 'workflow' | 'webhooks' | 'security' | 'faq';
+
+const GUIDE_SECTIONS: GuideSection[] = ['quickstart', 'workflow', 'webhooks', 'security', 'faq'];
+
+function getSectionFromHash(): GuideSection {
+  const seg = window.location.hash.replace(/^#\/?/, '').split('/')[1] as GuideSection;
+  return GUIDE_SECTIONS.includes(seg) ? seg : 'quickstart';
+}
+
 export const GuidePage: React.FC = () => {
   const [copiedText, setCopiedText] = useState<string | null>(null);
-  const [activeSection, setActiveSection] = useState<'quickstart' | 'workflow' | 'webhooks' | 'security' | 'faq'>('quickstart');
+  const [activeSection, setActiveSection] = useState<GuideSection>(getSectionFromHash);
 
   const [settings, setSettings] = useState<AppSettings | null>(null);
   const [systemEnv, setSystemEnv] = useState<SystemEnvironment | null>(null);
@@ -53,6 +62,22 @@ export const GuidePage: React.FC = () => {
   useEffect(() => {
     fetchLiveConfig();
   }, []);
+
+  useEffect(() => {
+    const onHashChange = () => {
+      const top = window.location.hash.replace(/^#\/?/, '').split('/')[0];
+      if (top === 'guide') setActiveSection(getSectionFromHash());
+    };
+    window.addEventListener('hashchange', onHashChange);
+    return () => window.removeEventListener('hashchange', onHashChange);
+  }, []);
+
+  const selectSection = (section: GuideSection) => {
+    setActiveSection(section);
+    const target = `#guide/${section}`;
+    if (window.location.hash === target) return;
+    window.location.hash = target;
+  };
 
   const activeUser = settings?.execution_user || systemEnv?.executionUser || 'nova';
   const activeKeyPath = sshKeyPath || settings?.ssh_key_path || '~/.ssh/id_ed25519';
@@ -106,7 +131,7 @@ export const GuidePage: React.FC = () => {
         {/* Quick Nav Pills */}
         <div className="flex flex-wrap gap-2 pt-4 mt-4 border-t border-white/10 text-xs">
           <button
-            onClick={() => setActiveSection('quickstart')}
+            onClick={() => selectSection('quickstart')}
             className={`px-3.5 py-1.5 rounded-xl font-medium transition ${
               activeSection === 'quickstart'
                 ? 'bg-white text-[#4A5D45] font-bold shadow-xs'
@@ -116,7 +141,7 @@ export const GuidePage: React.FC = () => {
             🚀 Alur Cepat (Quickstart)
           </button>
           <button
-            onClick={() => setActiveSection('workflow')}
+            onClick={() => selectSection('workflow')}
             className={`px-3.5 py-1.5 rounded-xl font-medium transition ${
               activeSection === 'workflow'
                 ? 'bg-white text-[#4A5D45] font-bold shadow-xs'
@@ -126,7 +151,7 @@ export const GuidePage: React.FC = () => {
             📁 Manajemen Repositori
           </button>
           <button
-            onClick={() => setActiveSection('webhooks')}
+            onClick={() => selectSection('webhooks')}
             className={`px-3.5 py-1.5 rounded-xl font-medium transition ${
               activeSection === 'webhooks'
                 ? 'bg-white text-[#4A5D45] font-bold shadow-xs'
@@ -136,7 +161,7 @@ export const GuidePage: React.FC = () => {
             🔗 GitHub Webhook Auto-Deploy
           </button>
           <button
-            onClick={() => setActiveSection('security')}
+            onClick={() => selectSection('security')}
             className={`px-3.5 py-1.5 rounded-xl font-medium transition ${
               activeSection === 'security'
                 ? 'bg-white text-[#4A5D45] font-bold shadow-xs'
@@ -146,7 +171,7 @@ export const GuidePage: React.FC = () => {
             🛡️ Arsitektur Keamanan
           </button>
           <button
-            onClick={() => setActiveSection('faq')}
+            onClick={() => selectSection('faq')}
             className={`px-3.5 py-1.5 rounded-xl font-medium transition ${
               activeSection === 'faq'
                 ? 'bg-white text-[#4A5D45] font-bold shadow-xs'
@@ -171,55 +196,58 @@ export const GuidePage: React.FC = () => {
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4 pt-2">
               {/* Step 1 */}
-              <div className="p-4 rounded-2xl bg-[#F3EFEA] border border-[#E5E0D8] space-y-2 relative">
-                <div className="flex items-center justify-between">
-                  <span className="w-7 h-7 rounded-full bg-[#4A5D45] text-white flex items-center justify-center font-bold text-xs">1</span>
-                  <Key className="w-4 h-4 text-[#82937E]" />
+              <div className="p-4 rounded-2xl bg-[#F3EFEA] border border-[#E5E0D8] space-y-2">
+                <div className="flex items-center gap-2.5">
+                  <span className="w-7 h-7 rounded-full bg-[#4A5D45] text-white flex items-center justify-center font-bold text-xs shrink-0">1</span>
+                  <h4 className="text-sm font-bold text-[#2C2C2C] flex-1">Setup SSH Key Server</h4>
+                  <Key className="w-4 h-4 text-[#82937E] shrink-0" />
                 </div>
-                <h4 className="text-sm font-bold text-[#2C2C2C]">1. Setup SSH Key Server</h4>
-                <p className="text-xs text-[#6E6760] leading-relaxed">
+                <p className="text-xs text-[#6E6760] leading-relaxed text-left">
                   Buka menu <strong className="text-[#4A5D45]">Git / SSH</strong>. Jika belum ada SSH key untuk user <code className="font-mono text-[#3D4F38] font-bold">{activeUser}</code>, klik <code className="bg-white px-1 py-0.5 rounded border border-[#E5E0D8] text-[11px]">Generate SSH Key</code>. Salin Public Key tersebut.
                 </p>
-                <div className="text-[11px] font-medium text-[#4A5D45] flex items-center gap-1 pt-1">
-                  <span>Lokasi Key Aktif:</span> <code className="font-mono text-[#3D4F38]">{activeKeyPath}.pub</code>
-                </div>
+                <p className="text-[11px] font-medium text-[#4A5D45] pt-1 text-left">
+                  Lokasi Key Aktif: <code className="font-mono text-[#3D4F38]">{activeKeyPath}.pub</code>
+                </p>
               </div>
 
               {/* Step 2 */}
-              <div className="p-4 rounded-2xl bg-[#F3EFEA] border border-[#E5E0D8] space-y-2 relative">
-                <div className="flex items-center justify-between">
-                  <span className="w-7 h-7 rounded-full bg-[#4A5D45] text-white flex items-center justify-center font-bold text-xs">2</span>
-                  <ExternalLink className="w-4 h-4 text-[#82937E]" />
+              <div className="p-4 rounded-2xl bg-[#F3EFEA] border border-[#E5E0D8] space-y-2">
+                <div className="flex items-center gap-2.5">
+                  <span className="w-7 h-7 rounded-full bg-[#4A5D45] text-white flex items-center justify-center font-bold text-xs shrink-0">2</span>
+                  <h4 className="text-sm font-bold text-[#2C2C2C] flex-1">Pasang Key di GitHub (Account-Level)</h4>
+                  <ExternalLink className="w-4 h-4 text-[#82937E] shrink-0" />
                 </div>
-                <h4 className="text-sm font-bold text-[#2C2C2C]">2. Pasang Key di GitHub</h4>
-                <p className="text-xs text-[#6E6760] leading-relaxed">
-                  Di repository GitHub Anda, buka <strong className="text-[#2C2C2C]">Settings &gt; Deploy Keys &gt; Add deploy key</strong>. Paste public key dan centang <em>"Allow write access"</em> jika perlu.
+                <p className="text-xs text-[#6E6760] leading-relaxed text-left">
+                  Di GitHub buka <strong className="text-[#2C2C2C]">Settings &gt; SSH and GPG keys &gt; New SSH key</strong>, paste public key (type: Authentication Key). Satu key akun otomatis berlaku untuk <strong>semua</strong> repo Anda — termasuk repo private.
                 </p>
-                <div className="text-[11px] font-medium text-[#4A5D45] flex items-center gap-1 pt-1">
-                  <span>Tes Koneksi:</span> Gunakan tombol <em>"Test GitHub Connection"</em> di menu Git/SSH.
-                </div>
+                <p className="text-[11px] text-[#8C5828] leading-relaxed text-left">
+                  Catatan: Jangan memasangnya sebagai <strong>Deploy Key per repo</strong> — satu deploy key hanya bisa ditempel di satu repo; repo kedua akan ditolak dengan error "Key already in use".
+                </p>
+                <p className="text-[11px] font-medium text-[#4A5D45] pt-1 text-left">
+                  Tes Koneksi: Gunakan tombol <em>"Test GitHub Connection"</em> di menu Git/SSH dan pastikan muncul "Authenticated as: &lt;username akun Anda&gt;".
+                </p>
               </div>
 
               {/* Step 3 */}
-              <div className="p-4 rounded-2xl bg-[#F3EFEA] border border-[#E5E0D8] space-y-2 relative">
-                <div className="flex items-center justify-between">
-                  <span className="w-7 h-7 rounded-full bg-[#4A5D45] text-white flex items-center justify-center font-bold text-xs">3</span>
-                  <FolderGit2 className="w-4 h-4 text-[#82937E]" />
+              <div className="p-4 rounded-2xl bg-[#F3EFEA] border border-[#E5E0D8] space-y-2">
+                <div className="flex items-center gap-2.5">
+                  <span className="w-7 h-7 rounded-full bg-[#4A5D45] text-white flex items-center justify-center font-bold text-xs shrink-0">3</span>
+                  <h4 className="text-sm font-bold text-[#2C2C2C] flex-1">Hubungkan Repositori</h4>
+                  <FolderGit2 className="w-4 h-4 text-[#82937E] shrink-0" />
                 </div>
-                <h4 className="text-sm font-bold text-[#2C2C2C]">3. Hubungkan Repositori</h4>
-                <p className="text-xs text-[#6E6760] leading-relaxed">
+                <p className="text-xs text-[#6E6760] leading-relaxed text-left">
                   Buka menu <strong className="text-[#4A5D45]">Repositories</strong>, lalu klik <code className="bg-white px-1 py-0.5 rounded border border-[#E5E0D8] text-[11px]">+ Add Repository</code>. Masukkan URL SSH (contoh: <code className="text-[#B87333]">git@github.com:user/repo.git</code>) dan Path Website di server (contoh: <code className="text-[#3D4F38]">{primaryRoot}/domain.com</code>).
                 </p>
               </div>
 
               {/* Step 4 */}
-              <div className="p-4 rounded-2xl bg-[#F3EFEA] border border-[#E5E0D8] space-y-2 relative">
-                <div className="flex items-center justify-between">
-                  <span className="w-7 h-7 rounded-full bg-[#4A5D45] text-white flex items-center justify-center font-bold text-xs">4</span>
-                  <Webhook className="w-4 h-4 text-[#82937E]" />
+              <div className="p-4 rounded-2xl bg-[#F3EFEA] border border-[#E5E0D8] space-y-2">
+                <div className="flex items-center gap-2.5">
+                  <span className="w-7 h-7 rounded-full bg-[#4A5D45] text-white flex items-center justify-center font-bold text-xs shrink-0">4</span>
+                  <h4 className="text-sm font-bold text-[#2C2C2C] flex-1">Pasang GitHub Webhook</h4>
+                  <Webhook className="w-4 h-4 text-[#82937E] shrink-0" />
                 </div>
-                <h4 className="text-sm font-bold text-[#2C2C2C]">4. Pasang GitHub Webhook</h4>
-                <p className="text-xs text-[#6E6760] leading-relaxed">
+                <p className="text-xs text-[#6E6760] leading-relaxed text-left">
                   Buka menu <strong className="text-[#4A5D45]">Webhooks</strong>. Salin Webhook Payload URL & Secret Key. Pasang di GitHub Repository <strong className="text-[#2C2C2C]">Settings &gt; Webhooks &gt; Add webhook</strong> (Content type: <code className="text-[#3D4F38]">application/json</code>).
                 </p>
               </div>
@@ -435,7 +463,7 @@ export const GuidePage: React.FC = () => {
                 </h4>
                 <p className="text-[#6E6760] leading-relaxed">
                   <strong>Penyebab:</strong> Public Key server belum ditambahkan ke GitHub, atau SSH Key dibuat untuk user lain.<br />
-                  <strong>Solusi:</strong> Buka menu <strong>Git / SSH</strong>, salin SSH Public Key (lokasi aktif: <code className="font-mono text-[#3D4F38]">{activeKeyPath}.pub</code>), lalu tambahkan ke GitHub Repository &gt; Settings &gt; Deploy Keys. Klik tombol <em>"Test GitHub Connection"</em> di menu Git/SSH untuk memastikan status "AUTHENTICATED".
+                  <strong>Solusi:</strong> Buka menu <strong>Git / SSH</strong>, salin SSH Public Key (lokasi aktif: <code className="font-mono text-[#3D4F38]">{activeKeyPath}.pub</code>), lalu tambahkan ke GitHub &gt; Settings &gt; SSH and GPG keys sebagai Authentication Key. Klik tombol <em>"Test GitHub Connection"</em> di menu Git/SSH dan pastikan status "AUTHENTICATED" beserta "Authenticated as: &lt;username Anda&gt;".
                 </p>
               </div>
 
