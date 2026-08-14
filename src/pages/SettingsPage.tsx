@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { api } from '../services/api.js';
 import { AppSettings, SystemEnvironment, User, ActionTemplate } from '../types.js';
-import { Settings, Shield, Plus, Trash2, Check, AlertCircle, Save, FolderCheck, UserCheck, RefreshCw, CheckCircle2, UserCog, Terminal, Edit2, Lock, X, Database, Loader2, Server } from 'lucide-react';
+import { Settings, Shield, Plus, Trash2, Check, AlertCircle, Save, FolderCheck, UserCheck, RefreshCw, CheckCircle2, UserCog, Terminal, Edit2, X, Database, Loader2, Server } from 'lucide-react';
 
 interface SettingsPageProps {
   onAccountUpdated: (user: User, token: string) => void;
@@ -51,6 +51,7 @@ export const SettingsPage: React.FC<SettingsPageProps> = ({ onAccountUpdated }) 
   const [templates, setTemplates] = useState<ActionTemplate[]>([]);
   const [templateMsg, setTemplateMsg] = useState<{ text: string; type: 'success' | 'error' } | null>(null);
   const [editingTemplate, setEditingTemplate] = useState<ActionTemplate | null>(null);
+  const [templateFormOpen, setTemplateFormOpen] = useState(false);
   const [templateName, setTemplateName] = useState('');
   const [templateStack, setTemplateStack] = useState('');
   const [templateDesc, setTemplateDesc] = useState('');
@@ -157,6 +158,7 @@ export const SettingsPage: React.FC<SettingsPageProps> = ({ onAccountUpdated }) 
     setTemplateDesc(t?.description || '');
     setTemplateCommands(t?.commands.join('\n') || '');
     setTemplateMsg(null);
+    setTemplateFormOpen(true);
   };
 
   const handleSaveTemplate = async () => {
@@ -174,6 +176,7 @@ export const SettingsPage: React.FC<SettingsPageProps> = ({ onAccountUpdated }) 
       }
       await fetchTemplates();
       setEditingTemplate(null);
+      setTemplateFormOpen(false);
     } catch (err: any) {
       setTemplateMsg({ text: err.message || 'Failed to save template', type: 'error' });
     } finally {
@@ -182,7 +185,8 @@ export const SettingsPage: React.FC<SettingsPageProps> = ({ onAccountUpdated }) 
   };
 
   const handleDeleteTemplate = async (t: ActionTemplate) => {
-    if (!window.confirm(`Delete template '${t.name}'?`)) return;
+    const hint = t.is_builtin ? ' This is a built-in recommendation — the app will recreate it after a fresh start.' : '';
+    if (!window.confirm(`Delete template '${t.name}'?${hint}`)) return;
     setTemplateMsg(null);
     try {
       await api.deleteActionTemplate(t.id);
@@ -595,70 +599,72 @@ export const SettingsPage: React.FC<SettingsPageProps> = ({ onAccountUpdated }) 
           </div>
         )}
 
-        {editingTemplate && (
-          <div className="space-y-3 rounded-2xl bg-[#F3EFEA]/70 border border-[#E5E0D8] p-4">
-            <div className="flex items-center justify-between">
-              <h4 className="text-xs font-semibold text-[#4A5D45]">
-                {editingTemplate ? `Edit Template: ${editingTemplate.name}` : 'New Template'}
-              </h4>
-              <button
-                onClick={() => setEditingTemplate(null)}
-                className="p-1 rounded-lg text-[#8C857E] hover:text-[#2C2C2C] hover:bg-[#E5E0D8]/50 transition"
-              >
-                <X className="w-4 h-4" />
-              </button>
-            </div>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-3 text-xs">
-              <div>
-                <label className="block text-[#4A5D45] font-semibold mb-1">Name</label>
+        {templateFormOpen && (
+          <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-xs animate-fade-in">
+            <div className="w-full max-w-lg bg-white border border-[#E5E0D8] rounded-[28px] p-6 text-[#2C2C2C] space-y-4 shadow-2xl max-h-[90vh] overflow-y-auto">
+              <div className="flex items-center justify-between">
+                <h4 className="text-xs font-semibold text-[#4A5D45]">
+                  {editingTemplate ? `Edit Template: ${editingTemplate.name}` : 'New Template'}
+                </h4>
+                <button
+                  onClick={() => setTemplateFormOpen(false)}
+                  className="p-1 rounded-lg text-[#8C857E] hover:text-[#2C2C2C] hover:bg-[#E5E0D8]/50 transition"
+                >
+                  <X className="w-4 h-4" />
+                </button>
+              </div>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-3 text-xs">
+                <div>
+                  <label className="block text-[#4A5D45] font-semibold mb-1">Name</label>
+                  <input
+                    type="text"
+                    value={templateName}
+                    onChange={e => setTemplateName(e.target.value)}
+                    placeholder="e.g. Node.js — Build"
+                    className="w-full px-3.5 py-2 bg-white border border-[#E5E0D8] rounded-xl text-[#2C2C2C] focus:outline-none focus:border-[#4A5D45]"
+                  />
+                </div>
+                <div>
+                  <label className="block text-[#4A5D45] font-semibold mb-1">Tech Stack</label>
+                  <input
+                    type="text"
+                    value={templateStack}
+                    onChange={e => setTemplateStack(e.target.value)}
+                    placeholder="e.g. Node.js / npm"
+                    className="w-full px-3.5 py-2 bg-white border border-[#E5E0D8] rounded-xl text-[#2C2C2C] focus:outline-none focus:border-[#4A5D45]"
+                  />
+                </div>
+              </div>
+              <div className="text-xs">
+                <label className="block text-[#4A5D45] font-semibold mb-1">Description</label>
                 <input
                   type="text"
-                  value={templateName}
-                  onChange={e => setTemplateName(e.target.value)}
-                  placeholder="e.g. Node.js — Build"
+                  value={templateDesc}
+                  onChange={e => setTemplateDesc(e.target.value)}
+                  placeholder="Short description (optional)"
                   className="w-full px-3.5 py-2 bg-white border border-[#E5E0D8] rounded-xl text-[#2C2C2C] focus:outline-none focus:border-[#4A5D45]"
                 />
               </div>
-              <div>
-                <label className="block text-[#4A5D45] font-semibold mb-1">Tech Stack</label>
-                <input
-                  type="text"
-                  value={templateStack}
-                  onChange={e => setTemplateStack(e.target.value)}
-                  placeholder="e.g. Node.js / npm"
-                  className="w-full px-3.5 py-2 bg-white border border-[#E5E0D8] rounded-xl text-[#2C2C2C] focus:outline-none focus:border-[#4A5D45]"
+              <div className="text-xs">
+                <label className="block text-[#4A5D45] font-semibold mb-1">Commands (one per line)</label>
+                <textarea
+                  value={templateCommands}
+                  onChange={e => setTemplateCommands(e.target.value)}
+                  rows={4}
+                  spellCheck={false}
+                  placeholder={'npm install\nnpm run build'}
+                  className="w-full px-3.5 py-2 bg-white border border-[#E5E0D8] rounded-xl text-[#2C2C2C] font-mono focus:outline-none focus:border-[#4A5D45] resize-y"
                 />
               </div>
-            </div>
-            <div className="text-xs">
-              <label className="block text-[#4A5D45] font-semibold mb-1">Description</label>
-              <input
-                type="text"
-                value={templateDesc}
-                onChange={e => setTemplateDesc(e.target.value)}
-                placeholder="Short description (optional)"
-                className="w-full px-3.5 py-2 bg-white border border-[#E5E0D8] rounded-xl text-[#2C2C2C] focus:outline-none focus:border-[#4A5D45]"
-              />
-            </div>
-            <div className="text-xs">
-              <label className="block text-[#4A5D45] font-semibold mb-1">Commands (one per line)</label>
-              <textarea
-                value={templateCommands}
-                onChange={e => setTemplateCommands(e.target.value)}
-                rows={4}
-                spellCheck={false}
-                placeholder={'npm install\nnpm run build'}
-                className="w-full px-3.5 py-2 bg-white border border-[#E5E0D8] rounded-xl text-[#2C2C2C] font-mono focus:outline-none focus:border-[#4A5D45] resize-y"
-              />
-            </div>
-            <div className="flex justify-end">
-              <button
-                onClick={handleSaveTemplate}
-                disabled={savingTemplate}
-                className="inline-flex items-center gap-1.5 px-4 py-2 rounded-xl text-xs font-semibold bg-[#4A5D45] hover:bg-[#3D4F38] text-white disabled:opacity-50 transition shadow-sm"
-              >
-                <Save className="w-3.5 h-3.5" /> {savingTemplate ? 'Saving...' : 'Save Template'}
-              </button>
+              <div className="flex justify-end">
+                <button
+                  onClick={handleSaveTemplate}
+                  disabled={savingTemplate}
+                  className="inline-flex items-center gap-1.5 px-4 py-2 rounded-xl text-xs font-semibold bg-[#4A5D45] hover:bg-[#3D4F38] text-white disabled:opacity-50 transition shadow-sm"
+                >
+                  <Save className="w-3.5 h-3.5" /> {savingTemplate ? 'Saving...' : 'Save Template'}
+                </button>
+              </div>
             </div>
           </div>
         )}
@@ -676,8 +682,8 @@ export const SettingsPage: React.FC<SettingsPageProps> = ({ onAccountUpdated }) 
                     {t.tech_stack}
                   </span>
                   {t.is_builtin && (
-                    <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded-lg bg-[#D4A373]/20 text-[#8C5828] text-[10px] font-semibold shrink-0">
-                      <Lock className="w-2.5 h-2.5" /> BUILT-IN
+                    <span className="px-1.5 py-0.5 rounded-lg bg-[#D4A373]/20 text-[#8C5828] text-[10px] font-semibold shrink-0">
+                      BUILT-IN
                     </span>
                   )}
                 </div>
@@ -692,15 +698,13 @@ export const SettingsPage: React.FC<SettingsPageProps> = ({ onAccountUpdated }) 
                 >
                   <Edit2 className="w-3.5 h-3.5" />
                 </button>
-                {!t.is_builtin && (
-                  <button
-                    onClick={() => handleDeleteTemplate(t)}
-                    className="p-2 rounded-xl bg-white hover:bg-[#C86D51]/15 text-[#6E6760] hover:text-[#C86D51] border border-[#E5E0D8] transition"
-                    title="Delete Template"
-                  >
-                    <Trash2 className="w-3.5 h-3.5" />
-                  </button>
-                )}
+                <button
+                  onClick={() => handleDeleteTemplate(t)}
+                  className="p-2 rounded-xl bg-white hover:bg-[#C86D51]/15 text-[#6E6760] hover:text-[#C86D51] border border-[#E5E0D8] transition"
+                  title="Delete Template"
+                >
+                  <Trash2 className="w-3.5 h-3.5" />
+                </button>
               </div>
             </div>
           ))}

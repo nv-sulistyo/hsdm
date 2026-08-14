@@ -45,7 +45,7 @@ Full-stack app: React 19 + Vite + Tailwind 4 frontend, Express + SQLite backend,
 
 ### Features completed previous session (HEAD `0fe4184`)
 - `deployment_trigger` gating per repo (`MANUAL`/`WEBHOOK`/`BOTH`): manual pull → 403 when `WEBHOOK` (`routes/repositories.ts`); webhook → `IGNORED_TRIGGER_MANUAL` when `MANUAL` (`webhook.service.ts`); Pull Now button disabled + tooltip.
-- Repo Actions: tables `action_templates` (19 built-in seeds) + `action_runs`; `src/server/services/action.service.ts` (sequential commands, stop on fail, 30–3600s timeout, 200KB output cap, concurrent guard per repo); routes `/api/actions`; `ActionRunnerModal.tsx`; SettingsPage CRUD (built-ins locked).
+- Repo Actions: tables `action_templates` (19 built-in seeds) + `action_runs`; `src/server/services/action.service.ts` (sequential commands, stop on fail, 30–3600s timeout, 200KB output cap, concurrent guard per repo); routes `/api/actions`; `ActionRunnerModal.tsx`; SettingsPage CRUD. Built-ins are recommendations only — fully CRUD-able (deleted built-ins are re-seeded by `INSERT OR IGNORE` on next startup).
 - Clear history endpoints: `DELETE /api/deployments` (+`?repositoryId`), `DELETE /api/actions/runs` (+`?repositoryId`), `DELETE /webhooks/events` (+`?repositoryId` — under `/webhooks`, not `/api`), `DELETE /api/system/audit-logs`; each logs `CLEAR_*` audit. UI buttons in DeploymentsPage/WebhooksPage/AuditLogsPage/ActionRunnerModal + SettingsPage "Data & Logs" section (per-category + Clear All Data).
 - Dashboard: `Promise.allSettled` for stats+SSH (SSH failure no longer blanks stats) + silent 10s polling; RepositoriesPage silent 10s polling too.
 - Webhook history path: `/webhooks/history` (mounted router is `/webhooks`).

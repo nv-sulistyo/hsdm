@@ -129,9 +129,6 @@ export function deleteActionTemplate(id: number): void {
   if (!row) {
     throw new Error(`Action template with ID ${id} not found.`);
   }
-  if (row.is_builtin) {
-    throw new Error('Built-in templates cannot be deleted.');
-  }
   db.prepare('DELETE FROM action_templates WHERE id = ?').run(id);
 }
 
