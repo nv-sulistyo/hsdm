@@ -36,14 +36,21 @@ Full-stack app: React 19 + Vite + Tailwind 4 frontend, Express + SQLite backend,
 - DB saga: original server DB file was deleted while PM2 held the deleted file (ghost); a laptop DB (empty, with `C:\www\wwwroot` roots) was uploaded. After PM2 restart the ghost is gone; `db.ts` self-heals Windows-style paths on non-Windows startup (`toLinuxPath`, audit `DB_SELF_HEAL`). Old/new DBs both work — all migrations are additive.
 - Dashboard used to be broken on the server until build was updated: stats endpoint is `/api/system/dashboard/stats` (NOT `/api/dashboard/stats` — that 404s) and `system.ts` SQL must use single-quoted string literals (double quotes = SQLite identifiers → 500).
 
-### Features completed this session (all committed, HEAD `0fe4184`)
+### Features completed this session (all committed, HEAD `54dfd36`)
+- Hash routing: `App.tsx` reads `location.hash` (`#<tab>`, `#settings/<sub>`, `#guide/<section>`), `navigateTab` writes hash (dashboard → `#`, skips when empty); SettingsPage/GuidePage have their own `hashchange` listeners guarded by top segment. Back/forward works.
+- SettingsPage 4 pill tabs (server/account/templates/data) synced to hash; GuidePage 5 pill sections synced to hash.
+- SSH account-key flow: `parseAuthenticatedUser` in `ssh.service.ts` (regex `Hi\s+([A-Za-z0-9._-]+)!`) → `authenticatedUser` in `testGithubConnection` success response; GitSshPage "Authenticated as" badge; Guide/FAQ/dashboard copy updated (account-level key, not deploy keys).
+- Circular logo: `public/logo.svg` is now a circle (white server bars on sage disc); `Logo.tsx` no longer uses `rounded-[25%]`.
+- **Init Git** feature (existing non-git folder → managed repo): `initializeGitRepository` in `git.service.ts` runs `git init` + `remote add origin` + `fetch` + `branch -M <branch>`; if `origin/<branch>` exists → `reset --hard origin/<branch>` + set upstream (untracked files kept); if remote is empty → requires `gitUser`/`gitEmail`/`commitMessage`, then `git add -A` + `git -c user.name ... commit` + `push -u` (error code `REMOTE_EMPTY` returned as 400 + `code` field). Route `POST /api/repositories/:id/init-git` (audit `INIT_GIT_REPOSITORY`), `api.initGitRepo`, "Init Git" button on `NOT_A_REPOSITORY` cards + confirm modal in RepositoriesPage. `request()` in `api.ts` now attaches `data.code` to thrown errors. Idempotent — retry after REMOTE_EMPTY works.
+
+### Features completed previous session (HEAD `0fe4184`)
 - `deployment_trigger` gating per repo (`MANUAL`/`WEBHOOK`/`BOTH`): manual pull → 403 when `WEBHOOK` (`routes/repositories.ts`); webhook → `IGNORED_TRIGGER_MANUAL` when `MANUAL` (`webhook.service.ts`); Pull Now button disabled + tooltip.
 - Repo Actions: tables `action_templates` (19 built-in seeds) + `action_runs`; `src/server/services/action.service.ts` (sequential commands, stop on fail, 30–3600s timeout, 200KB output cap, concurrent guard per repo); routes `/api/actions`; `ActionRunnerModal.tsx`; SettingsPage CRUD (built-ins locked).
 - Clear history endpoints: `DELETE /api/deployments` (+`?repositoryId`), `DELETE /api/actions/runs` (+`?repositoryId`), `DELETE /webhooks/events` (+`?repositoryId` — under `/webhooks`, not `/api`), `DELETE /api/system/audit-logs`; each logs `CLEAR_*` audit. UI buttons in DeploymentsPage/WebhooksPage/AuditLogsPage/ActionRunnerModal + SettingsPage "Data & Logs" section (per-category + Clear All Data).
 - Dashboard: `Promise.allSettled` for stats+SSH (SSH failure no longer blanks stats) + silent 10s polling; RepositoriesPage silent 10s polling too.
 - Webhook history path: `/webhooks/history` (mounted router is `/webhooks`).
 - Font: Poppins replaces Newsreader (`@theme { --font-serif: 'Poppins', ... }` in `index.css`); use `font-serif` without `italic` anywhere.
-- Branding: user-made square SVG logo at `public/logo.svg`; `src/components/Logo.tsx` renders `<img src="/logo.svg">` with `rounded-[25%]` CSS (never a text initial); favicon = `/logo.svg`; sidebar header shows "HSDM" + subtitle only.
+- Branding: circular SVG logo at `public/logo.svg` (white server bars on sage disc); `src/components/Logo.tsx` renders `<img src="/logo.svg">` (no rounding CSS needed — the SVG is already a circle); favicon = `/logo.svg`; sidebar header shows "HSDM" + subtitle only.
 - GuidePage FAQ #5: "Key already in use" → key is the account SSH key, no deploy key needed.
 
 ### Verification workflow

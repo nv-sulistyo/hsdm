@@ -25,7 +25,8 @@ import {
   X,
   Check,
   ShieldAlert,
-  Code
+  Code,
+  GitCommitHorizontal
 } from 'lucide-react';
 
 export const RepositoriesPage: React.FC = () => {
@@ -44,6 +45,14 @@ export const RepositoriesPage: React.FC = () => {
 
   const [pullingRepoId, setPullingRepoId] = useState<number | null>(null);
   const [fetchingRepoId, setFetchingRepoId] = useState<number | null>(null);
+
+  // Init Git Modal
+  const [initGitModalRepo, setInitGitModalRepo] = useState<Repository | null>(null);
+  const [initGitName, setInitGitName] = useState('');
+  const [initGitEmail, setInitGitEmail] = useState('');
+  const [initGitMessage, setInitGitMessage] = useState('');
+  const [initGitting, setInitGitting] = useState(false);
+  const [initGitError, setInitGitError] = useState<string | null>(null);
 
   // Edit Modal
   const [editingRepo, setEditingRepo] = useState<Repository | null>(null);
@@ -167,6 +176,27 @@ export const RepositoriesPage: React.FC = () => {
       fetchRepositories();
     } catch (err: any) {
       setActionMessage({ text: err.message || 'Clone failed', type: 'error' });
+    }
+  };
+
+  const handleInitGit = async () => {
+    if (!initGitModalRepo) return;
+    setInitGitting(true);
+    setInitGitError(null);
+    try {
+      const res = await api.initGitRepo(initGitModalRepo.id, {
+        gitUser: initGitName.trim() || undefined,
+        gitEmail: initGitEmail.trim() || undefined,
+        commitMessage: initGitMessage.trim() || undefined
+      });
+      setActionMessage({ text: res.message, type: 'success' });
+      setInitGitModalRepo(null);
+      fetchRepositories();
+    } catch (err: any) {
+      const msg = err.message || 'Git initialization failed';
+      setInitGitError(err.code === 'REMOTE_EMPTY' ? msg.replace(/^REMOTE_EMPTY:\s*/, '') : msg);
+    } finally {
+      setInitGitting(false);
     }
   };
 
@@ -343,12 +373,27 @@ export const RepositoriesPage: React.FC = () => {
               {/* Actions Column */}
               <div className="flex items-center gap-2 flex-wrap shrink-0 border-t lg:border-t-0 pt-3 lg:pt-0 border-[#E5E0D8]">
                 {repo.status === 'NOT_A_REPOSITORY' ? (
-                  <button
-                    onClick={() => handleCloneNow(repo)}
-                    className="px-3.5 py-1.5 rounded-xl text-xs font-semibold bg-[#4A5D45] hover:bg-[#3D4F38] text-white transition flex items-center gap-1.5 shadow-sm"
-                  >
-                    <Download className="w-3.5 h-3.5" /> Clone Now
-                  </button>
+                  <>
+                    <button
+                      onClick={() => {
+                        setInitGitModalRepo(repo);
+                        setInitGitName('');
+                        setInitGitEmail('');
+                        setInitGitMessage('');
+                        setInitGitError(null);
+                      }}
+                      title="Initialize Git in the existing folder (connect remote, then sync or initial commit & push)"
+                      className="px-3.5 py-1.5 rounded-xl text-xs font-semibold bg-[#B87333] hover:bg-[#8C5828] text-white transition flex items-center gap-1.5 shadow-sm"
+                    >
+                      <GitCommitHorizontal className="w-3.5 h-3.5" /> Init Git
+                    </button>
+                    <button
+                      onClick={() => handleCloneNow(repo)}
+                      className="px-3.5 py-1.5 rounded-xl text-xs font-semibold bg-[#4A5D45] hover:bg-[#3D4F38] text-white transition flex items-center gap-1.5 shadow-sm"
+                    >
+                      <Download className="w-3.5 h-3.5" /> Clone Now
+                    </button>
+                  </>
                 ) : (
                   <>
                     <button
@@ -585,6 +630,106 @@ export const RepositoriesPage: React.FC = () => {
                 className="px-4 py-2 rounded-xl text-xs font-semibold bg-[#4A5D45] hover:bg-[#3D4F38] text-white shadow-sm"
               >
                 {savingEdit ? 'Saving...' : 'Save Changes'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Init Git Modal */}
+      {initGitModalRepo && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-xs animate-fade-in">
+          <div className="w-full max-w-lg bg-white border border-[#E5E0D8] rounded-[28px] p-6 text-[#2C2C2C] space-y-4 shadow-xl">
+            <div className="flex items-center justify-between border-b border-[#E5E0D8] pb-3">
+              <h3 className="text-base font-serif font-bold text-[#4A5D45]">
+                Initialize Git Repository: {initGitModalRepo.name}
+              </h3>
+              <button onClick={() => setInitGitModalRepo(null)} className="text-[#8C857E] hover:text-[#2C2C2C]">
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+
+            <div className="p-3.5 rounded-2xl bg-[#D4A373]/20 border border-[#D4A373]/40 text-xs text-[#8C5828] space-y-1.5">
+              <p className="font-semibold flex items-center gap-1.5">
+                <AlertTriangle className="w-4 h-4 shrink-0" /> Yang akan dilakukan:
+              </p>
+              <ul className="list-disc pl-4 leading-relaxed space-y-1 text-[#6E6760]">
+                <li>
+                  <code className="font-mono">git init</code> + remote <code className="font-mono">origin</code> ={' '}
+                  {initGitModalRepo.git_url}
+                </li>
+                <li>
+                  Jika repo GitHub sudah punya commit: isi folder disinkronkan dengan{' '}
+                  <code className="font-mono">origin/{initGitModalRepo.branch || 'main'}</code> — file yang sudah
+                  ter-track dan berbeda dari remote akan ditimpa. File untracked tetap dipertahankan.
+                </li>
+                <li>Jika repo GitHub masih kosong: dibuat commit pertama dan di-push otomatis.</li>
+              </ul>
+              <p className="text-[11px] text-[#8C857E]">
+                Tip: file yang masuk .gitignore (mis. node_modules) tidak ikut di-commit.
+              </p>
+            </div>
+
+            {initGitError && (
+              <div className="p-3 rounded-2xl bg-[#C86D51]/15 border border-[#C86D51]/30 text-xs text-[#9E391C]">
+                {initGitError}
+              </div>
+            )}
+
+            <div className="space-y-3 text-xs">
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label className="block text-[#4A5D45] font-semibold mb-1">Git Name (user.name)</label>
+                  <input
+                    type="text"
+                    value={initGitName}
+                    onChange={(e) => setInitGitName(e.target.value)}
+                    placeholder="e.g. Nova Admin"
+                    className="w-full px-3.5 py-2 bg-[#F3EFEA] border border-[#E5E0D8] rounded-xl text-[#2C2C2C] focus:outline-none focus:border-[#4A5D45]"
+                  />
+                </div>
+                <div>
+                  <label className="block text-[#4A5D45] font-semibold mb-1">Git Email (user.email)</label>
+                  <input
+                    type="email"
+                    value={initGitEmail}
+                    onChange={(e) => setInitGitEmail(e.target.value)}
+                    placeholder="e.g. admin@domain.com"
+                    className="w-full px-3.5 py-2 bg-[#F3EFEA] border border-[#E5E0D8] rounded-xl text-[#2C2C2C] focus:outline-none focus:border-[#4A5D45]"
+                  />
+                </div>
+              </div>
+
+              <div>
+                <label className="block text-[#4A5D45] font-semibold mb-1">Commit Message</label>
+                <input
+                  type="text"
+                  value={initGitMessage}
+                  onChange={(e) => setInitGitMessage(e.target.value)}
+                  placeholder="e.g. Initial commit from HSDM"
+                  className="w-full px-3.5 py-2 bg-[#F3EFEA] border border-[#E5E0D8] rounded-xl text-[#2C2C2C] focus:outline-none focus:border-[#4A5D45]"
+                />
+                <p className="text-[11px] text-[#8C857E] mt-1">
+                  Wajib diisi hanya jika repo GitHub belum punya commit (commit pertama + push otomatis).
+                </p>
+              </div>
+            </div>
+
+            <div className="flex justify-end gap-2 pt-3 border-t border-[#E5E0D8]">
+              <button
+                onClick={() => setInitGitModalRepo(null)}
+                disabled={initGitting}
+                className="px-4 py-2 rounded-xl text-xs font-semibold bg-[#F3EFEA] hover:bg-[#EAE4DC] border border-[#E5E0D8] text-[#6E6760]"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={handleInitGit}
+                disabled={initGitting}
+                className="px-4 py-2 rounded-xl text-xs font-semibold bg-[#B87333] hover:bg-[#8C5828] text-white shadow-sm flex items-center gap-1.5"
+              >
+                <GitCommitHorizontal className={`w-4 h-4 ${initGitting ? 'animate-spin' : ''}`} />
+                {initGitting ? 'Initializing...' : 'Init & Sync Git'}
               </button>
             </div>
           </div>

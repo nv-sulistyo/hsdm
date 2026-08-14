@@ -395,6 +395,92 @@ export async function fetchRepository(localPath: string): Promise<{ stdout: stri
 }
 
 /**
+ * Convert an existing (non-git) directory into a managed repository:
+ * git init + remote add origin + fetch + branch rename, then either
+ * sync the working tree with origin/<branch> (if the remote already has commits)
+ * or create the first commit and push (if the remote is empty).
+ */
+export async function initializeGitRepository(options: {
+  gitUrl: string;
+  branch: string;
+  localPath: string;
+  gitUser?: string;
+  gitEmail?: string;
+  commitMessage?: string;
+}): Promise<{ message: string; createdInitialCommit: boolean }> {
+  const pathValidation = validateAllowedPath(options.localPath);
+  if (!pathValidation.valid) {
+    throw new Error(pathValidation.error);
+  }
+
+  const resolved = pathValidation.resolvedPath;
+  if (!fs.existsSync(resolved)) {
+    throw new Error(`Directory '${resolved}' does not exist.`);
+  }
+  if (!fs.statSync(resolved).isDirectory()) {
+    throw new Error(`'${resolved}' is not a directory.`);
+  }
+
+  // Initialize if needed (idempotent so a retry after REMOTE_EMPTY works)
+  if (!fs.existsSync(path.join(resolved, '.git'))) {
+    await runGit(['init'], resolved);
+  }
+  try {
+    await runGit(['remote', 'get-url', 'origin'], resolved);
+  } catch {
+    await runGit(['remote', 'add', 'origin', options.gitUrl], resolved);
+  }
+
+  // Contact the remote; fails loudly on unreachable/SSH issues
+  await runGit(['fetch', 'origin'], resolved);
+
+  // Normalize branch name to the repository's configured branch
+  await runGit(['branch', '-M', options.branch], resolved);
+
+  // Does the remote already have this branch?
+  let originBranchExists = false;
+  try {
+    await runGit(['rev-parse', '--verify', '--quiet', `origin/${options.branch}`], resolved);
+    originBranchExists = true;
+  } catch {
+    // branch not on remote yet
+  }
+
+  if (originBranchExists) {
+    // Sync the working tree with the remote (tracked files only; untracked files are kept)
+    await runGit(['reset', '--hard', `origin/${options.branch}`], resolved);
+    try {
+      await runGit(['branch', '--set-upstream-to', `origin/${options.branch}`, options.branch], resolved);
+    } catch {
+      // already tracked
+    }
+    return {
+      message: `Git initialized. Working tree synced with origin/${options.branch}.`,
+      createdInitialCommit: false
+    };
+  }
+
+  // Remote branch does not exist (empty remote) — create the first commit and push
+  const gitUser = (options.gitUser || '').trim();
+  const gitEmail = (options.gitEmail || '').trim();
+  const commitMessage = (options.commitMessage || '').trim();
+  if (!gitUser || !gitEmail || !commitMessage) {
+    throw new Error(
+      'REMOTE_EMPTY: Remote repository has no commits yet. Provide a Git name, email and commit message to create the initial commit and push.'
+    );
+  }
+
+  await runGit(['add', '-A'], resolved);
+  await runGit(['-c', `user.name=${gitUser}`, '-c', `user.email=${gitEmail}`, 'commit', '-m', commitMessage], resolved);
+  await runGit(['push', '-u', 'origin', options.branch], resolved);
+
+  return {
+    message: `Initial commit created and pushed to origin/${options.branch}.`,
+    createdInitialCommit: true
+  };
+}
+
+/**
  * Pull remote changes into working tree.
  */
 export async function pullRepository(

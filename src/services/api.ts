@@ -41,7 +41,9 @@ async function request<T>(endpoint: string, options: RequestInit = {}): Promise<
   const data = await res.json().catch(() => ({}));
 
   if (!res.ok) {
-    throw new Error(data.error || data.message || `HTTP ${res.status} error`);
+    const err: any = new Error(data.error || data.message || `HTTP ${res.status} error`);
+    err.code = data.code || undefined;
+    throw err;
   }
 
   return data as T;
@@ -100,6 +102,11 @@ export const api = {
       body: JSON.stringify({ force })
     }),
   getRepoStatus: (id: number) => request<GitStatusDetails>(`/api/repositories/${id}/status`),
+  initGitRepo: (id: number, payload: { gitUser?: string; gitEmail?: string; commitMessage?: string }) =>
+    request<{ message: string; createdInitialCommit: boolean }>(`/api/repositories/${id}/init-git`, {
+      method: 'POST',
+      body: JSON.stringify(payload)
+    }),
   getRepoBranches: (id: number) => request<BranchInfo[]>(`/api/repositories/${id}/branches`),
   getRepoLogs: (id: number, limit = 20) => request<CommitLogItem[]>(`/api/repositories/${id}/log?limit=${limit}`),
 

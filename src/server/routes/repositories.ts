@@ -8,8 +8,9 @@ import {
   deleteRepository,
   refreshRepositoryStatus
 } from '../services/repository.service.js';
-import { cloneRepository, fetchRepository, checkRepoStatus, getBranches, getCommitLogs } from '../services/git.service.js';
+import { cloneRepository, fetchRepository, checkRepoStatus, getBranches, getCommitLogs, initializeGitRepository } from '../services/git.service.js';
 import { executeDeployment } from '../services/deployment.service.js';
+import { logAudit } from '../services/audit.service.js';
 
 const router = Router();
 
@@ -92,6 +93,39 @@ router.post('/:id/clone', async (req, res) => {
     await refreshRepositoryStatus(id);
     return res.json({ message: 'Clone output', stdout: result.stdout });
   } catch (err: any) {
+    return res.status(400).json({ error: err.message });
+  }
+});
+
+router.post('/:id/init-git', async (req: AuthenticatedRequest, res) => {
+  const id = parseInt(req.params.id, 10);
+  const repo = getRepositoryById(id);
+  if (!repo) {
+    return res.status(404).json({ error: `Repository ID ${id} not found.` });
+  }
+
+  try {
+    const result = await initializeGitRepository({
+      gitUrl: repo.git_url,
+      branch: repo.branch || 'main',
+      localPath: repo.local_path,
+      gitUser: req.body?.gitUser,
+      gitEmail: req.body?.gitEmail,
+      commitMessage: req.body?.commitMessage
+    });
+    await refreshRepositoryStatus(id);
+    logAudit({
+      userId: req.user?.id,
+      username: req.user?.username,
+      ipAddress: req.ip,
+      action: 'INIT_GIT_REPOSITORY',
+      details: `Initialized Git repository '${repo.name}' at ${repo.local_path}`
+    });
+    return res.json({ message: result.message, createdInitialCommit: result.createdInitialCommit });
+  } catch (err: any) {
+    if (err.message?.includes('REMOTE_EMPTY')) {
+      return res.status(400).json({ error: err.message, code: 'REMOTE_EMPTY' });
+    }
     return res.status(400).json({ error: err.message });
   }
 });
