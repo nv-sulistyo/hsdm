@@ -216,9 +216,9 @@ export const AddRepoWizard: React.FC<AddRepoWizardProps> = ({ onClose, onSuccess
         {/* Step Indicator */}
         <div className="flex items-center px-6 py-3 border-b border-[#E5E0D8] bg-white gap-2">
           {[1, 2, 3, 4, 5].map((s) => (
-            <div key={s} className="flex-1 flex items-center gap-1.5">
+            <div key={s} className="flex-1 min-w-0 flex items-center gap-1.5">
               <div
-                className={`w-6 h-6 rounded-full flex items-center justify-center text-xs font-bold transition ${
+                className={`w-6 h-6 shrink-0 rounded-full flex items-center justify-center text-xs font-bold transition ${
                   step === s
                     ? 'bg-[#4A5D45] text-white'
                     : step > s
