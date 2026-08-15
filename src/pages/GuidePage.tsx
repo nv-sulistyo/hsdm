@@ -557,7 +557,9 @@ export const GuidePage: React.FC = () => {
               <AlertTriangle className="w-4 h-4 text-[#B87333] shrink-0 mt-0.5" />
               <span>
                 Mode <em>native</em> tetap tersedia untuk ko-eksistensi dengan aaPanel (nginx di host, reverse proxy ke 127.0.0.1). Webhook{' '}
-                <code className="font-mono">/webhooks/github/:id</code> tetap berjalan di kedua mode. Uji coba penuh memerlukan server Linux dengan Docker daemon.
+                <code className="font-mono">/webhooks/github/:id</code> tetap berjalan di kedua mode. Installer hanya berjalan di Linux dengan Docker daemon —
+                HSDM harus dijalankan sebagai <strong>root</strong> (mis. PM2 as root). Urutan komponen penting: pasang <em>Docker + Compose</em> dulu,
+                baru <em>Caddy (container)</em> / Portainer / Netdata.
               </span>
             </div>
           </div>

@@ -11,7 +11,7 @@ Full-stack app: React 19 + Vite + Tailwind 4 frontend, Express + SQLite backend,
 - `dotenv` is a dependency but never imported — env vars (e.g. `JWT_SECRET`) come from the process environment only.
 
 ## Architecture
-- `server.ts` — Express entry; mounts `/api/auth`, `/api/repositories`, `/api/deployments`, `/api/system`, `/webhooks`, plus `/api/health`. Webhooks use a raw-body middleware (before `express.json()`) so HMAC-SHA256 verification sees the exact bytes.
+- `server.ts` — Express entry; mounts `/api/auth`, `/api/repositories`, `/api/deployments`, `/api/system`, `/api/actions`, `/api/docker`, `/api/monitoring`, `/api/systemd`, `/api/webserver`, `/api/installer`, `/webhooks`, plus `/api/health`. Webhooks use a raw-body middleware (before `express.json()`) so HMAC-SHA256 verification sees the exact bytes.
 - `src/server/` — backend: `db.ts` (schema + seeds), `routes/`, `services/`, `middleware/auth.middleware.ts` (`requireAuth` on all API routes except login).
 - `src/` root — React frontend: `pages/`, `components/`, `services/api.ts` (typed client), `types.ts` (shared between frontend and backend).
 - SQLite via Node built-in `node:sqlite` (`DatabaseSync`), no ORM. DB auto-created at `database/deployment_manager.db`; `initDatabase()` runs schema + `ALTER TABLE`-style column migrations on startup. Default admin `admin/admin123` is seeded.
@@ -27,6 +27,16 @@ Full-stack app: React 19 + Vite + Tailwind 4 frontend, Express + SQLite backend,
 - The AI Studio boilerplate (stale README, `metadata.json`, `assets/.aistudio/`, `@google/genai` dependency, Gemini env vars) has been removed. Trust code, not docs.
 
 ## Project state (session log 2026-08-13)
+
+### VPS stack (session log 2026-08-15, branch `feat/vps-stack`, HEAD `651d2a3`)
+Topologi target (Level B): Cloudflare DNS proxy langsung → **satu container Caddy di network `proxy`** → container aplikasi per **nama service**. GitHub compose yaml tidak pernah diubah — HSDM menulis `docker-compose.override.yml`. Proxy attachment **opt-in** (hanya service bertanda yang join `proxy`); DB/Redis tetap di network default project (isolasi otomatis). Backward compat: mode `native` (nginx/caddy via apt, proxy ke 127.0.0.1) tetap default untuk ko-eksistensi aaPanel.
+
+- Commit: `436e8b3` settings · `8569bd3` compose override · `3ecec2c` caddy container mode · `4a93d09` portainer/netdata installer · `651d2a3` guide docs.
+- Settings baru (SettingsPage "VPS Stack"): `deploy_root` (`/opt/hsdm/projects`), `proxy_network` (`proxy`), `infrastructure_dir` (`/opt/hsdm/infrastructure`), `proxy_mode` (`native`|`container`, default `native`), `caddy_container_name` (`caddy`). Fix bug dead code: `getSettings` kini benar-benar mengembalikan `nginx_sites_dir`, `nginx_sites_enabled_dir`, `caddyfile_path`.
+- Override compose: kolom `repositories.compose_proxy_services` (dual marking: field form RepositoriesPage **dan** checkbox DockerPage). `docker.service.ts`: `overrideFileName`, `composeArgs` auto-include override, `writeComposeOverride` (validasi `docker compose config -q`, hapus file jika kosong). Route `GET/POST /api/docker/compose/:repositoryId/override` — **body key `services` (array), BUKAN `proxiedServices`**. Deploy compose: tulis/hapus override + `docker compose -f <file> -f <override> up -d --build`.
+- Mode container: installer `caddy_container` (tulis infra compose di `infrastructure_dir/caddy` + `docker network create proxy` + set `proxy_mode=container`). `webserver.service.ts`: `getCaddyfilePath` → `infrastructure_dir/caddy/Caddyfile`; status caddy via `docker inspect`/`docker exec caddy version`; validate/reload via `docker exec caddy validate|reload --config /etc/caddy/Caddyfile`; `generateReverseProxy` menerima `targetHost` (default: `frontend` di container mode, `127.0.0.1` di native). WebServerPage ReverseProxyModal punya field Target host (prefill dari service pertama `compose_proxy_services`).
+- Installer opsional: `portainer` (9443+9000, docker.sock) dan `netdata` (19999, mount /proc /sys) — satu instance untuk semua project. `StackStatus` + `caddyContainer`, `portainer`, `netdata`, `proxyMode`.
+- GuidePage: section `vps` baru (topologi, mekanisme override, expose vs ports, langkah setup).
 
 ### Production server (live environment)
 - Deployment: Ubuntu + aaPanel, GitHub repo `https://github.com/nv-sulistyo/hsdm.git`, folder `/www/wwwroot/hsdm`, PM2 app name `hsdm` (root), PORT 3210, public via Cloudflare Tunnel. **Port 3000 is another app (`rekap_transaksi`) — never touch.**
@@ -55,3 +65,5 @@ Full-stack app: React 19 + Vite + Tailwind 4 frontend, Express + SQLite backend,
 
 ### Verification workflow
 - Dev server: `tsx watch server.ts` on PORT 3210 (laptop SQLite DB, empty repos), login `admin/admin123`; API smoke tests via PowerShell `Invoke-RestMethod` against `http://localhost:3210`; always run `npm run lint` + `npm run build` before committing; commit messages are one-line summaries in the style of the git log.
+- **Testing Docker/VPS-stack features on Windows**: Docker Desktop CLI works from the host (docker daemon 29.x). WSL2 exists but only has the `docker-desktop` distro (no Ubuntu). Full stack flow verified this way: start Docker Desktop (`C:\Program Files\Docker\Docker\Docker Desktop.exe`), register a test repo from a `file:///` bare remote, set `proxy_mode=container`, then override/compose/webserver endpoints all work (Linux containers run inside the Docker Desktop VM; Windows paths for `local_path`/`infrastructure_dir` are translated automatically). The Stack Installer (`isWindows()` guard + bash `execFile`) still requires real Linux — test on VPS or after installing an Ubuntu WSL distro.
+- Test domain trick: use `testapp.localhost` (Caddy issues a local cert, no Let's Encrypt) + `curl -sk --resolve testapp.localhost:443:127.0.0.1 https://testapp.localhost/`. HTTP on :80 answers 308 → HTTPS. End-to-end verified: `Hello from testapp web` served from the `web` container via `reverse_proxy web:80`.
