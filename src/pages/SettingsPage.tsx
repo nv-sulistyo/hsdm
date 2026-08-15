@@ -34,6 +34,11 @@ export const SettingsPage: React.FC<SettingsPageProps> = ({ onAccountUpdated }) 
   const [sshKeyPath, setSshKeyPath] = useState('~/.ssh/id_ed25519');
   const [knownHostsPath, setKnownHostsPath] = useState('~/.ssh/known_hosts');
 
+  // VPS stack state
+  const [deployRoot, setDeployRoot] = useState('/opt/hsdm/projects');
+  const [proxyNetwork, setProxyNetwork] = useState('proxy');
+  const [infrastructureDir, setInfrastructureDir] = useState('/opt/hsdm/infrastructure');
+
   // Change password state
   const [currentPassword, setCurrentPassword] = useState('');
   const [newUsername, setNewUsername] = useState('');
@@ -118,6 +123,9 @@ export const SettingsPage: React.FC<SettingsPageProps> = ({ onAccountUpdated }) 
       setGitExecutable(data.git_executable || 'git');
       setSshKeyPath(data.ssh_key_path || '~/.ssh/id_ed25519');
       setKnownHostsPath(data.known_hosts_path || '~/.ssh/known_hosts');
+      setDeployRoot(data.deploy_root || '/opt/hsdm/projects');
+      setProxyNetwork(data.proxy_network || 'proxy');
+      setInfrastructureDir(data.infrastructure_dir || '/opt/hsdm/infrastructure');
     } catch (err: any) {
       console.error('Failed to fetch settings:', err);
     } finally {
@@ -248,7 +256,10 @@ export const SettingsPage: React.FC<SettingsPageProps> = ({ onAccountUpdated }) 
         execution_user: executionUser,
         git_executable: gitExecutable,
         ssh_key_path: sshKeyPath,
-        known_hosts_path: knownHostsPath
+        known_hosts_path: knownHostsPath,
+        deploy_root: deployRoot,
+        proxy_network: proxyNetwork,
+        infrastructure_dir: infrastructureDir
       });
       setSettings(updated);
       setSettingsMsg({ text: 'Settings saved successfully.', type: 'success' });
@@ -430,6 +441,55 @@ export const SettingsPage: React.FC<SettingsPageProps> = ({ onAccountUpdated }) 
           >
             <Plus className="w-4 h-4 text-[#82937E]" /> Add Root
           </button>
+        </div>
+      </div>
+
+      {/* VPS Stack Box */}
+      <div className="p-5 rounded-[28px] bg-white border border-[#E5E0D8] shadow-sm space-y-4">
+        <div className="flex items-center gap-2">
+          <Server className="w-5 h-5 text-[#82937E]" />
+          <div>
+            <h3 className="text-sm font-serif font-bold text-[#4A5D45]">VPS Stack</h3>
+            <p className="text-xs text-[#8C857E]">Deploy root for Docker projects and the shared proxy network used by Caddy/nginx</p>
+          </div>
+        </div>
+
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4 text-xs">
+          <div>
+            <label className="block text-[#4A5D45] font-semibold mb-1">Deploy Root</label>
+            <input
+              type="text"
+              value={deployRoot}
+              onChange={(e) => setDeployRoot(e.target.value)}
+              placeholder="/opt/hsdm/projects"
+              className="w-full px-3.5 py-2 bg-[#F3EFEA] border border-[#E5E0D8] rounded-xl text-[#2C2C2C] font-mono focus:outline-none focus:border-[#4A5D45]"
+            />
+            <span className="text-[11px] text-[#8C857E] mt-1 block">Where Docker projects are created (one folder per repo).</span>
+          </div>
+
+          <div>
+            <label className="block text-[#4A5D45] font-semibold mb-1">Proxy Network</label>
+            <input
+              type="text"
+              value={proxyNetwork}
+              onChange={(e) => setProxyNetwork(e.target.value)}
+              placeholder="proxy"
+              className="w-full px-3.5 py-2 bg-[#F3EFEA] border border-[#E5E0D8] rounded-xl text-[#2C2C2C] font-mono focus:outline-none focus:border-[#4A5D45]"
+            />
+            <span className="text-[11px] text-[#8C857E] mt-1 block">Shared Docker network for web-facing services behind the proxy.</span>
+          </div>
+
+          <div>
+            <label className="block text-[#4A5D45] font-semibold mb-1">Infrastructure Dir</label>
+            <input
+              type="text"
+              value={infrastructureDir}
+              onChange={(e) => setInfrastructureDir(e.target.value)}
+              placeholder="/opt/hsdm/infrastructure"
+              className="w-full px-3.5 py-2 bg-[#F3EFEA] border border-[#E5E0D8] rounded-xl text-[#2C2C2C] font-mono focus:outline-none focus:border-[#4A5D45]"
+            />
+            <span className="text-[11px] text-[#8C857E] mt-1 block">Where infra compose (Caddy, Portainer, Netdata) lives.</span>
+          </div>
         </div>
       </div>
 

@@ -17,14 +17,14 @@ export interface WebServerStatus {
 
 function getNginxDirs() {
   const settings = getSettings();
-  const sitesDir = (settings as any).nginx_sites_dir || '/etc/nginx/sites-available';
-  const enabledDir = (settings as any).nginx_sites_enabled_dir || '/etc/nginx/sites-enabled';
+  const sitesDir = settings.nginx_sites_dir || '/etc/nginx/sites-available';
+  const enabledDir = settings.nginx_sites_enabled_dir || '/etc/nginx/sites-enabled';
   return { sitesDir, enabledDir };
 }
 
 function getCaddyfilePath(): string {
   const settings = getSettings();
-  return (settings as any).caddyfile_path || '/etc/caddy/Caddyfile';
+  return settings.caddyfile_path || '/etc/caddy/Caddyfile';
 }
 
 export async function getWebServerStatus(): Promise<WebServerStatus> {

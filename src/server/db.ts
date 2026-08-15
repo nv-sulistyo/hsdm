@@ -204,7 +204,13 @@ export function initDatabase() {
     { key: 'git_executable', value: 'git' },
     { key: 'ssh_key_path', value: '~/.ssh/id_ed25519' },
     { key: 'known_hosts_path', value: '~/.ssh/known_hosts' },
-    { key: 'auto_refresh_interval', value: '30' }
+    { key: 'auto_refresh_interval', value: '30' },
+    { key: 'deploy_root', value: '/opt/hsdm/projects' },
+    { key: 'proxy_network', value: 'proxy' },
+    { key: 'infrastructure_dir', value: '/opt/hsdm/infrastructure' },
+    { key: 'nginx_sites_dir', value: '/etc/nginx/sites-available' },
+    { key: 'nginx_sites_enabled_dir', value: '/etc/nginx/sites-enabled' },
+    { key: 'caddyfile_path', value: '/etc/caddy/Caddyfile' }
   ];
 
   const now = new Date().toISOString();

@@ -101,6 +101,12 @@ export interface AppSettings {
   auto_refresh_interval: number;
   execution_user: string;
   execution_home_dir?: string;
+  deploy_root?: string;
+  proxy_network?: string;
+  infrastructure_dir?: string;
+  nginx_sites_dir?: string;
+  nginx_sites_enabled_dir?: string;
+  caddyfile_path?: string;
 }
 
 export interface DirectoryInspection {

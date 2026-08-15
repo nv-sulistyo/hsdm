@@ -68,7 +68,13 @@ export function getSettings(): AppSettings {
     git_executable: map.git_executable || 'git',
     ssh_key_path: map.ssh_key_path || '~/.ssh/id_ed25519',
     known_hosts_path: map.known_hosts_path || '~/.ssh/known_hosts',
-    auto_refresh_interval: parseInt(map.auto_refresh_interval || '30', 10)
+    auto_refresh_interval: parseInt(map.auto_refresh_interval || '30', 10),
+    deploy_root: map.deploy_root || '/opt/hsdm/projects',
+    proxy_network: map.proxy_network || 'proxy',
+    infrastructure_dir: map.infrastructure_dir || '/opt/hsdm/infrastructure',
+    nginx_sites_dir: map.nginx_sites_dir || '/etc/nginx/sites-available',
+    nginx_sites_enabled_dir: map.nginx_sites_enabled_dir || '/etc/nginx/sites-enabled',
+    caddyfile_path: map.caddyfile_path || '/etc/caddy/Caddyfile'
   };
 }
 
@@ -108,6 +114,34 @@ export function updateSettings(newSettings: Partial<AppSettings>): AppSettings {
   }
   if (newSettings.auto_refresh_interval !== undefined) {
     upsert.run('auto_refresh_interval', String(newSettings.auto_refresh_interval), now, now);
+  }
+  if (newSettings.deploy_root !== undefined) {
+    const cleaned = path.resolve(String(newSettings.deploy_root));
+    if (CRITICAL_SYSTEM_DIRS.includes(cleaned)) {
+      throw new Error(`Deploy root '${cleaned}' is a critical system directory and cannot be used.`);
+    }
+    upsert.run('deploy_root', cleaned, now, now);
+  }
+  if (newSettings.proxy_network !== undefined) {
+    const network = String(newSettings.proxy_network).trim().replace(/[^A-Za-z0-9_-]/g, '');
+    if (!network) throw new Error('Proxy network name cannot be empty.');
+    upsert.run('proxy_network', network, now, now);
+  }
+  if (newSettings.infrastructure_dir !== undefined) {
+    const cleaned = path.resolve(String(newSettings.infrastructure_dir));
+    if (CRITICAL_SYSTEM_DIRS.includes(cleaned)) {
+      throw new Error(`Infrastructure directory '${cleaned}' is a critical system directory and cannot be used.`);
+    }
+    upsert.run('infrastructure_dir', cleaned, now, now);
+  }
+  if (newSettings.nginx_sites_dir !== undefined) {
+    upsert.run('nginx_sites_dir', String(newSettings.nginx_sites_dir), now, now);
+  }
+  if (newSettings.nginx_sites_enabled_dir !== undefined) {
+    upsert.run('nginx_sites_enabled_dir', String(newSettings.nginx_sites_enabled_dir), now, now);
+  }
+  if (newSettings.caddyfile_path !== undefined) {
+    upsert.run('caddyfile_path', String(newSettings.caddyfile_path), now, now);
   }
 
   return getSettings();
