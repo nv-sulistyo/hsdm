@@ -13,6 +13,8 @@ export type DeploymentStatus = 'PENDING' | 'RUNNING' | 'SUCCESS' | 'FAILED' | 'C
 
 export type TriggerType = 'MANUAL' | 'WEBHOOK' | 'SYSTEM';
 
+export type DeployMode = 'NONE' | 'DOCKER_COMPOSE' | 'SYSTEMD';
+
 export interface User {
   id: number;
   username: string;
@@ -33,6 +35,12 @@ export interface Repository {
   deployment_trigger?: 'MANUAL' | 'WEBHOOK' | 'BOTH';
   before_command?: string;
   post_pull_command?: string;
+  deploy_mode?: DeployMode;
+  compose_file?: string;
+  compose_service?: string;
+  systemd_unit?: string;
+  domain?: string;
+  proxy_target_port?: number;
   auto_deploy: boolean;
   webhook_enabled: boolean;
   webhook_secret: string;
@@ -197,4 +205,167 @@ export interface ActionRun {
   output?: string;
   error?: string;
   created_at: string;
+}
+
+// ---------- VPS Stack: Docker ----------
+
+export interface ToolVersion {
+  installed: boolean;
+  version?: string;
+}
+
+export interface DockerContainer {
+  id: string;
+  name: string;
+  image: string;
+  command: string;
+  created_at: string;
+  state: string;
+  status: string;
+  ports: string;
+  networks: string;
+}
+
+export interface DockerImage {
+  id: string;
+  repository: string;
+  tag: string;
+  created_at: string;
+  size: string;
+}
+
+export interface ComposePsEntry {
+  name: string;
+  service: string;
+  status: string;
+  ports: string;
+}
+
+export interface ComposeServiceInput {
+  name: string;
+  image: string;
+  container_name?: string;
+  ports?: string[];
+  volumes?: string[];
+  environment?: string[];
+  restart?: string;
+  depends_on?: string[];
+  network?: string;
+  command?: string;
+}
+
+// ---------- VPS Stack: Monitoring ----------
+
+export interface DiskInfo {
+  filesystem: string;
+  mount: string;
+  size: number;
+  used: number;
+  available: number;
+  percent: number;
+}
+
+export interface SystemMetrics {
+  hostname: string;
+  platform: string;
+  release: string;
+  arch: string;
+  distro?: string;
+  uptime: number;
+  loadAvg: number[];
+  cpuUsage: number;
+  cpuCount: number;
+  memory: {
+    total: number;
+    available: number;
+    used: number;
+    percent: number;
+  };
+  disks: DiskInfo[];
+  timestamp: string;
+}
+
+export interface ContainerStat {
+  container: string;
+  name: string;
+  cpu_percent: string;
+  mem_usage: string;
+  mem_percent: string;
+  net_io: string;
+  block_io: string;
+  pids: string;
+}
+
+export interface ToolStatus {
+  docker: ToolVersion;
+  compose: ToolVersion;
+  nginx: ToolVersion;
+  caddy: ToolVersion;
+  systemd: ToolVersion;
+  isRoot: boolean;
+  platform: string;
+}
+
+// ---------- VPS Stack: systemd ----------
+
+export interface SystemdService {
+  unit: string;
+  load: string;
+  active: string;
+  sub: string;
+  description: string;
+}
+
+// ---------- VPS Stack: Web server (nginx / caddy) ----------
+
+export interface NginxSite {
+  name: string;
+  enabled: boolean;
+  path: string;
+  enabledPath?: string;
+}
+
+export interface WebServerStatus {
+  nginx: { installed: boolean; version?: string; sitesDir?: string; enabledDir?: string };
+  caddy: { installed: boolean; version?: string; caddyfilePath?: string };
+}
+
+export interface ReverseProxyInput {
+  engine: 'nginx' | 'caddy';
+  name: string;
+  domain: string;
+  targetPort: number;
+}
+
+export interface ReverseProxyResult {
+  engine: 'nginx' | 'caddy';
+  name: string;
+  path: string;
+  message: string;
+}
+
+// ---------- VPS Stack: Installer ----------
+
+export interface StackStatusItem {
+  installed: boolean;
+  version?: string;
+  installedAt?: string;
+}
+
+export interface StackStatus {
+  docker: StackStatusItem;
+  compose: StackStatusItem;
+  nginx: StackStatusItem;
+  caddy: StackStatusItem;
+  isRoot: boolean;
+  installable: boolean;
+}
+
+export interface InstallJob {
+  status: 'RUNNING' | 'SUCCESS' | 'FAILED' | null;
+  components: string[];
+  log: string[];
+  startedAt?: string;
+  finishedAt?: string;
+  error?: string;
 }

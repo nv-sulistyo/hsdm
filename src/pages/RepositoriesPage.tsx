@@ -62,6 +62,12 @@ export const RepositoriesPage: React.FC = () => {
   const [editGitStrategy, setEditGitStrategy] = useState<'stash' | 'force' | 'ff-only'>('stash');
   const [editBeforeCmd, setEditBeforeCmd] = useState('');
   const [editPostPullCmd, setEditPostPullCmd] = useState('');
+  const [editDeployMode, setEditDeployMode] = useState<'NONE' | 'DOCKER_COMPOSE' | 'SYSTEMD'>('NONE');
+  const [editComposeFile, setEditComposeFile] = useState('docker-compose.yml');
+  const [editComposeService, setEditComposeService] = useState('');
+  const [editSystemdUnit, setEditSystemdUnit] = useState('');
+  const [editDomain, setEditDomain] = useState('');
+  const [editProxyTargetPort, setEditProxyTargetPort] = useState('');
   const [editAutoDeploy, setEditAutoDeploy] = useState(true);
   const [editDescription, setEditDescription] = useState('');
   const [savingEdit, setSavingEdit] = useState(false);
@@ -211,6 +217,12 @@ export const RepositoriesPage: React.FC = () => {
         git_strategy: editGitStrategy,
         before_command: editBeforeCmd,
         post_pull_command: editPostPullCmd,
+        deploy_mode: editDeployMode,
+        compose_file: editComposeFile || 'docker-compose.yml',
+        compose_service: editComposeService || undefined,
+        systemd_unit: editSystemdUnit || undefined,
+        domain: editDomain || undefined,
+        proxy_target_port: editProxyTargetPort ? Number(editProxyTargetPort) : undefined,
         auto_deploy: editAutoDeploy,
         description: editDescription
       });
@@ -448,6 +460,12 @@ export const RepositoriesPage: React.FC = () => {
                     setEditGitStrategy(repo.git_strategy || 'stash');
                     setEditBeforeCmd(repo.before_command || '');
                     setEditPostPullCmd(repo.post_pull_command || '');
+                    setEditDeployMode(repo.deploy_mode || 'NONE');
+                    setEditComposeFile(repo.compose_file || 'docker-compose.yml');
+                    setEditComposeService(repo.compose_service || '');
+                    setEditSystemdUnit(repo.systemd_unit || '');
+                    setEditDomain(repo.domain || '');
+                    setEditProxyTargetPort(repo.proxy_target_port ? String(repo.proxy_target_port) : '');
                     setEditAutoDeploy(repo.auto_deploy);
                     setEditDescription(repo.description || '');
                   }}
@@ -604,6 +622,84 @@ export const RepositoriesPage: React.FC = () => {
                   onChange={(e) => setEditPostPullCmd(e.target.value)}
                   className="w-full px-3.5 py-2 bg-[#F3EFEA] border border-[#E5E0D8] rounded-xl text-[#2C2C2C] focus:outline-none focus:border-[#4A5D45] font-mono"
                 />
+              </div>
+
+              <div>
+                <label className="block text-[#4A5D45] font-semibold mb-1">Auto-Deploy (post-pull)</label>
+                <select
+                  value={editDeployMode}
+                  onChange={(e) => setEditDeployMode(e.target.value as any)}
+                  className="w-full px-3.5 py-2 bg-[#F3EFEA] border border-[#E5E0D8] rounded-xl text-[#2C2C2C] focus:outline-none focus:border-[#4A5D45]"
+                >
+                  <option value="NONE">None (pakai Post-Pull Command saja)</option>
+                  <option value="DOCKER_COMPOSE">Docker Compose — docker compose up -d --build</option>
+                  <option value="SYSTEMD">systemd — restart service unit</option>
+                </select>
+                <p className="text-[11px] text-[#8C857E] mt-1">
+                  Fitur terpisah dari wizard tambah repo. Setelah git pull sukses, tool otomatis menjalankan mode deploy yang dipilih.
+                </p>
+              </div>
+
+              {editDeployMode === 'DOCKER_COMPOSE' && (
+                <div className="grid grid-cols-2 gap-3">
+                  <div>
+                    <label className="block text-[#4A5D45] font-semibold mb-1">Compose file</label>
+                    <input
+                      type="text"
+                      value={editComposeFile}
+                      onChange={(e) => setEditComposeFile(e.target.value)}
+                      className="w-full px-3.5 py-2 bg-[#F3EFEA] border border-[#E5E0D8] rounded-xl text-[#2C2C2C] focus:outline-none focus:border-[#4A5D45] font-mono"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-[#4A5D45] font-semibold mb-1">Service (opsional, comma)</label>
+                    <input
+                      type="text"
+                      value={editComposeService}
+                      onChange={(e) => setEditComposeService(e.target.value)}
+                      placeholder="web, worker"
+                      className="w-full px-3.5 py-2 bg-[#F3EFEA] border border-[#E5E0D8] rounded-xl text-[#2C2C2C] focus:outline-none focus:border-[#4A5D45] font-mono"
+                    />
+                  </div>
+                </div>
+              )}
+
+              {editDeployMode === 'SYSTEMD' && (
+                <div>
+                  <label className="block text-[#4A5D45] font-semibold mb-1">Systemd unit name</label>
+                  <input
+                    type="text"
+                    placeholder="myapp.service"
+                    value={editSystemdUnit}
+                    onChange={(e) => setEditSystemdUnit(e.target.value)}
+                    className="w-full px-3.5 py-2 bg-[#F3EFEA] border border-[#E5E0D8] rounded-xl text-[#2C2C2C] focus:outline-none focus:border-[#4A5D45] font-mono"
+                  />
+                </div>
+              )}
+
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label className="block text-[#4A5D45] font-semibold mb-1">Domain (reverse proxy)</label>
+                  <input
+                    type="text"
+                    placeholder="app.example.com"
+                    value={editDomain}
+                    onChange={(e) => setEditDomain(e.target.value)}
+                    className="w-full px-3.5 py-2 bg-[#F3EFEA] border border-[#E5E0D8] rounded-xl text-[#2C2C2C] focus:outline-none focus:border-[#4A5D45] font-mono"
+                  />
+                </div>
+                <div>
+                  <label className="block text-[#4A5D45] font-semibold mb-1">Proxy target port</label>
+                  <input
+                    type="number"
+                    min={1}
+                    max={65535}
+                    placeholder="3000"
+                    value={editProxyTargetPort}
+                    onChange={(e) => setEditProxyTargetPort(e.target.value)}
+                    className="w-full px-3.5 py-2 bg-[#F3EFEA] border border-[#E5E0D8] rounded-xl text-[#2C2C2C] focus:outline-none focus:border-[#4A5D45]"
+                  />
+                </div>
               </div>
 
               <div>

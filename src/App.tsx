@@ -16,10 +16,29 @@ import { GitSshPage } from './pages/GitSshPage.js';
 import { SettingsPage } from './pages/SettingsPage.js';
 import { AuditLogsPage } from './pages/AuditLogsPage.js';
 import { GuidePage } from './pages/GuidePage.js';
+import { DockerPage } from './pages/DockerPage.js';
+import { MonitoringPage } from './pages/MonitoringPage.js';
+import { ServicesPage } from './pages/ServicesPage.js';
+import { WebServerPage } from './pages/WebServerPage.js';
+import { InstallerPage } from './pages/InstallerPage.js';
 import { RefreshCw, Terminal } from 'lucide-react';
 import { Logo } from './components/Logo.js';
 
-const VALID_TABS: NavTab[] = ['dashboard', 'repositories', 'deployments', 'webhooks', 'git-ssh', 'settings', 'audit-logs', 'guide'];
+const VALID_TABS: NavTab[] = [
+  'dashboard',
+  'repositories',
+  'deployments',
+  'docker',
+  'monitoring',
+  'services',
+  'webserver',
+  'installer',
+  'webhooks',
+  'git-ssh',
+  'settings',
+  'audit-logs',
+  'guide'
+];
 
 function getTabFromHash(): NavTab {
   const seg = window.location.hash.replace(/^#\/?/, '').split('/')[0] as NavTab;
@@ -116,6 +135,11 @@ export default function App() {
         )}
         {activeTab === 'repositories' && <RepositoriesPage />}
         {activeTab === 'deployments' && <DeploymentsPage />}
+        {activeTab === 'docker' && <DockerPage />}
+        {activeTab === 'monitoring' && <MonitoringPage />}
+        {activeTab === 'services' && <ServicesPage />}
+        {activeTab === 'webserver' && <WebServerPage />}
+        {activeTab === 'installer' && <InstallerPage />}
         {activeTab === 'webhooks' && <WebhooksPage />}
         {activeTab === 'git-ssh' && <GitSshPage />}
         {activeTab === 'settings' && <SettingsPage onAccountUpdated={handleLoginSuccess} />}

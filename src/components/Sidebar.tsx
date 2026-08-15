@@ -10,12 +10,30 @@ import {
   LogOut,
   Terminal,
   FolderGit2,
-  BookOpen
+  BookOpen,
+  Container,
+  Activity,
+  Server,
+  Globe,
+  Package
 } from 'lucide-react';
 import { User } from '../types.js';
 import { Logo } from './Logo.js';
 
-export type NavTab = 'dashboard' | 'repositories' | 'deployments' | 'webhooks' | 'git-ssh' | 'settings' | 'audit-logs' | 'guide';
+export type NavTab =
+  | 'dashboard'
+  | 'repositories'
+  | 'deployments'
+  | 'webhooks'
+  | 'git-ssh'
+  | 'settings'
+  | 'audit-logs'
+  | 'guide'
+  | 'docker'
+  | 'monitoring'
+  | 'services'
+  | 'webserver'
+  | 'installer';
 
 interface SidebarProps {
   activeTab: NavTab;
@@ -29,6 +47,11 @@ export const Sidebar: React.FC<SidebarProps> = ({ activeTab, setActiveTab, user,
     { id: 'dashboard', label: 'Dashboard', icon: LayoutDashboard },
     { id: 'repositories', label: 'Repositories', icon: FolderGit2 },
     { id: 'deployments', label: 'Deployments', icon: History },
+    { id: 'docker', label: 'Docker', icon: Container },
+    { id: 'monitoring', label: 'Monitoring', icon: Activity },
+    { id: 'services', label: 'System Services', icon: Server },
+    { id: 'webserver', label: 'Web Server', icon: Globe },
+    { id: 'installer', label: 'Installer', icon: Package },
     { id: 'webhooks', label: 'Webhooks', icon: Webhook },
     { id: 'git-ssh', label: 'Git / SSH', icon: Key },
     { id: 'settings', label: 'Settings', icon: Settings },

@@ -173,6 +173,12 @@ export async function updateRepository(
     deployment_trigger?: 'MANUAL' | 'WEBHOOK' | 'BOTH';
     before_command?: string;
     post_pull_command?: string;
+    deploy_mode?: 'NONE' | 'DOCKER_COMPOSE' | 'SYSTEMD';
+    compose_file?: string;
+    compose_service?: string;
+    systemd_unit?: string;
+    domain?: string;
+    proxy_target_port?: number;
     auto_deploy?: boolean;
     webhook_enabled?: boolean;
     webhook_secret?: string;
@@ -206,7 +212,9 @@ export async function updateRepository(
     UPDATE repositories
     SET name = ?, git_url = ?, branch = ?, local_path = ?, execution_user = ?,
         mode = ?, git_strategy = ?, deployment_trigger = ?, before_command = ?,
-        post_pull_command = ?, auto_deploy = ?, webhook_enabled = ?,
+        post_pull_command = ?, deploy_mode = ?, compose_file = ?, compose_service = ?,
+        systemd_unit = ?, domain = ?, proxy_target_port = ?,
+        auto_deploy = ?, webhook_enabled = ?,
         webhook_secret = ?, description = ?, updated_at = ?
     WHERE id = ?
   `).run(
@@ -220,6 +228,12 @@ export async function updateRepository(
     options.deployment_trigger !== undefined ? options.deployment_trigger : (current.deployment_trigger || 'BOTH'),
     options.before_command !== undefined ? options.before_command.trim() : current.before_command,
     options.post_pull_command !== undefined ? options.post_pull_command.trim() : current.post_pull_command,
+    options.deploy_mode !== undefined ? options.deploy_mode : (current.deploy_mode || 'NONE'),
+    options.compose_file !== undefined ? (options.compose_file || 'docker-compose.yml') : (current.compose_file || 'docker-compose.yml'),
+    options.compose_service !== undefined ? (options.compose_service || null) : (current.compose_service || null),
+    options.systemd_unit !== undefined ? (options.systemd_unit || null) : (current.systemd_unit || null),
+    options.domain !== undefined ? (options.domain || null) : (current.domain || null),
+    options.proxy_target_port !== undefined ? options.proxy_target_port : (current.proxy_target_port || null),
     options.auto_deploy !== undefined ? (options.auto_deploy ? 1 : 0) : (current.auto_deploy ? 1 : 0),
     options.webhook_enabled !== undefined ? (options.webhook_enabled ? 1 : 0) : (current.webhook_enabled ? 1 : 0),
     options.webhook_secret !== undefined ? options.webhook_secret : current.webhook_secret,

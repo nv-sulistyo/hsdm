@@ -10,6 +10,11 @@ import deploymentRoutes from './src/server/routes/deployments.js';
 import systemRoutes from './src/server/routes/system.js';
 import webhookRoutes from './src/server/routes/webhooks.js';
 import actionRoutes from './src/server/routes/actions.js';
+import dockerRoutes from './src/server/routes/docker.js';
+import monitoringRoutes from './src/server/routes/monitoring.js';
+import systemdRoutes from './src/server/routes/systemd.js';
+import webserverRoutes from './src/server/routes/webserver.js';
+import installerRoutes from './src/server/routes/installer.js';
 
 async function startServer() {
   // Initialize SQLite Database schema & default seeds
@@ -51,6 +56,11 @@ async function startServer() {
   app.use('/api/deployments', deploymentRoutes);
   app.use('/api/system', systemRoutes);
   app.use('/api/actions', actionRoutes);
+  app.use('/api/docker', dockerRoutes);
+  app.use('/api/monitoring', monitoringRoutes);
+  app.use('/api/systemd', systemdRoutes);
+  app.use('/api/webserver', webserverRoutes);
+  app.use('/api/installer', installerRoutes);
   app.use('/webhooks', webhookRoutes);
 
   // Health check endpoint

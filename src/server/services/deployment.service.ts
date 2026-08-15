@@ -118,6 +118,50 @@ export async function executeDeployment(options: {
         }
       }
 
+      // 4. Optional auto-deploy step based on deploy_mode (kept separate from
+      //    pull logic; configured per-repository, not part of the add wizard)
+      if (repo.deploy_mode === 'DOCKER_COMPOSE') {
+        const composeFile = repo.compose_file || 'docker-compose.yml';
+        fullLog += `\n--- Auto-Deploy: Docker Compose (${composeFile}) ---\n`;
+        try {
+          const cmd = `docker compose -f ${composeFile} up -d --build`;
+          fullLog += `Command: ${cmd}\n`;
+          const { stdout, stderr } = await execAsync(cmd, {
+            cwd: pathVal.resolvedPath,
+            env: execEnv,
+            maxBuffer: 10 * 1024 * 1024,
+            timeout: 600000 // 10 min for image builds
+          });
+          fullLog += `[COMPOSE STDOUT]\n${stdout}\n`;
+          if (stderr) {
+            fullLog += `[COMPOSE STDERR]\n${stderr}\n`;
+          }
+        } catch (cmdErr: any) {
+          fullLog += `[COMPOSE ERROR]\n${cmdErr.message || ''}\n${cmdErr.stderr || ''}\n`;
+          throw new Error(`Docker Compose deploy failed: ${cmdErr.message || 'Error executing compose'}`);
+        }
+      } else if (repo.deploy_mode === 'SYSTEMD' && repo.systemd_unit && repo.systemd_unit.trim()) {
+        const unit = repo.systemd_unit.trim();
+        fullLog += `\n--- Auto-Deploy: systemd restart (${unit}) ---\n`;
+        try {
+          const cmd = `systemctl restart ${unit}`;
+          fullLog += `Command: ${cmd}\n`;
+          const { stdout, stderr } = await execAsync(cmd, {
+            cwd: pathVal.resolvedPath,
+            env: execEnv,
+            maxBuffer: 10 * 1024 * 1024,
+            timeout: 120000
+          });
+          fullLog += `[SYSTEMD STDOUT]\n${stdout}\n`;
+          if (stderr) {
+            fullLog += `[SYSTEMD STDERR]\n${stderr}\n`;
+          }
+        } catch (cmdErr: any) {
+          fullLog += `[SYSTEMD ERROR]\n${cmdErr.message || ''}\n${cmdErr.stderr || ''}\n`;
+          throw new Error(`systemd restart failed: ${cmdErr.message || 'Error executing systemctl'}`);
+        }
+      }
+
       fullLog += `\n[DEPLOYMENT SUCCESS] Finished at ${new Date().toISOString()}\n`;
     } catch (err: any) {
       finalStatus = 'FAILED';

@@ -10,7 +10,22 @@ import {
   CommitLogItem,
   GitStatusDetails,
   ActionTemplate,
-  ActionRun
+  ActionRun,
+  DockerContainer,
+  DockerImage,
+  ComposePsEntry,
+  ComposeServiceInput,
+  SystemMetrics,
+  ContainerStat,
+  ToolStatus,
+  ToolVersion,
+  SystemdService,
+  NginxSite,
+  WebServerStatus,
+  ReverseProxyInput,
+  ReverseProxyResult,
+  StackStatus,
+  InstallJob
 } from '../types.js';
 
 const API_BASE = '';
@@ -197,5 +212,110 @@ export const api = {
   clearActionRuns: (repositoryId?: number) =>
     request<{ message: string; deleted: number }>(`/api/actions/runs${repositoryId ? `?repositoryId=${repositoryId}` : ''}`, {
       method: 'DELETE'
+    }),
+
+  // Docker
+  getDockerStatus: () =>
+    request<{ docker: ToolVersion; compose: ToolVersion; installed: boolean }>('/api/docker/status'),
+  getContainers: (all = true) => request<DockerContainer[]>(`/api/docker/containers?all=${all}`),
+  getContainerLogs: (id: string, tail = 200) =>
+    request<{ id: string; log: string }>(`/api/docker/containers/${encodeURIComponent(id)}/logs?tail=${tail}`),
+  startContainer: (id: string) =>
+    request<{ message: string; id: string }>(`/api/docker/containers/${encodeURIComponent(id)}/start`, { method: 'POST' }),
+  stopContainer: (id: string) =>
+    request<{ message: string; id: string }>(`/api/docker/containers/${encodeURIComponent(id)}/stop`, { method: 'POST' }),
+  restartContainer: (id: string) =>
+    request<{ message: string; id: string }>(`/api/docker/containers/${encodeURIComponent(id)}/restart`, { method: 'POST' }),
+  removeContainer: (id: string, force = false) =>
+    request<{ message: string }>(`/api/docker/containers/${encodeURIComponent(id)}?force=${force}`, { method: 'DELETE' }),
+  getDockerImages: () => request<DockerImage[]>('/api/docker/images'),
+  pullDockerImage: (image: string) =>
+    request<{ message: string; output: string }>('/api/docker/images/pull', {
+      method: 'POST',
+      body: JSON.stringify({ image })
+    }),
+  removeDockerImage: (id: string, force = false) =>
+    request<{ message: string }>(`/api/docker/images/${encodeURIComponent(id)}?force=${force}`, { method: 'DELETE' }),
+
+  // Docker Compose (per repository)
+  composePs: (repositoryId: number, file = 'docker-compose.yml') =>
+    request<ComposePsEntry[]>(`/api/docker/compose/${repositoryId}/ps?file=${encodeURIComponent(file)}`),
+  composeUp: (repositoryId: number, file = 'docker-compose.yml', build = true, services: string[] = []) =>
+    request<{ message: string; output: string }>(`/api/docker/compose/${repositoryId}/up?file=${encodeURIComponent(file)}&build=${build}`, {
+      method: 'POST',
+      body: JSON.stringify({ services })
+    }),
+  composeBuild: (repositoryId: number, file = 'docker-compose.yml', services: string[] = []) =>
+    request<{ message: string; output: string }>(`/api/docker/compose/${repositoryId}/build?file=${encodeURIComponent(file)}`, {
+      method: 'POST',
+      body: JSON.stringify({ services })
+    }),
+  composeDown: (repositoryId: number, file = 'docker-compose.yml') =>
+    request<{ message: string; output: string }>(`/api/docker/compose/${repositoryId}/down?file=${encodeURIComponent(file)}`, {
+      method: 'POST'
+    }),
+  getComposeContent: (repositoryId: number, file = 'docker-compose.yml') =>
+    request<{ file: string; content: string }>(`/api/docker/compose/${repositoryId}/file?file=${encodeURIComponent(file)}`),
+  saveComposeContent: (repositoryId: number, file: string, content: string) =>
+    request<{ message: string }>(`/api/docker/compose/${repositoryId}/file?file=${encodeURIComponent(file)}`, {
+      method: 'PUT',
+      body: JSON.stringify({ content })
+    }),
+  getComposeServices: (repositoryId: number, file = 'docker-compose.yml') =>
+    request<string[]>(`/api/docker/compose/${repositoryId}/services?file=${encodeURIComponent(file)}`),
+  addComposeService: (repositoryId: number, file: string, input: ComposeServiceInput) =>
+    request<{ message: string; services: string[] }>(`/api/docker/compose/${repositoryId}/services?file=${encodeURIComponent(file)}`, {
+      method: 'POST',
+      body: JSON.stringify(input)
+    }),
+
+  // Monitoring
+  getSystemMetrics: () => request<SystemMetrics>('/api/monitoring/system'),
+  getContainerStats: () => request<ContainerStat[]>('/api/monitoring/containers'),
+  getToolStatus: () => request<ToolStatus>('/api/monitoring/tools'),
+
+  // systemd
+  getSystemdServices: (filter = '') => request<SystemdService[]>(`/api/systemd/services?filter=${encodeURIComponent(filter)}`),
+  getSystemdServiceStatus: (unit: string) =>
+    request<{ unit: string; output: string }>(`/api/systemd/services/${encodeURIComponent(unit)}/status`),
+  getSystemdServiceLogs: (unit: string, tail = 200) =>
+    request<{ unit: string; log: string }>(`/api/systemd/services/${encodeURIComponent(unit)}/logs?tail=${tail}`),
+  systemdAction: (unit: string, action: 'start' | 'stop' | 'restart' | 'enable' | 'disable') =>
+    request<{ message: string; unit: string }>(`/api/systemd/services/${encodeURIComponent(unit)}/${action}`, { method: 'POST' }),
+
+  // Web server (nginx / caddy)
+  getWebServerStatus: () => request<WebServerStatus>('/api/webserver/status'),
+  getNginxSites: () => request<NginxSite[]>('/api/webserver/nginx/sites'),
+  getNginxSite: (name: string) =>
+    request<{ name: string; content: string }>(`/api/webserver/nginx/sites/${encodeURIComponent(name)}`),
+  saveNginxSite: (name: string, content: string) =>
+    request<{ message: string }>(`/api/webserver/nginx/sites/${encodeURIComponent(name)}`, {
+      method: 'PUT',
+      body: JSON.stringify({ content })
+    }),
+  nginxSiteAction: (name: string, action: 'enable' | 'disable') =>
+    request<{ message: string }>(`/api/webserver/nginx/sites/${encodeURIComponent(name)}/${action}`, { method: 'POST' }),
+  testNginx: () => request<{ ok: boolean; output: string }>('/api/webserver/nginx/test', { method: 'POST' }),
+  reloadNginx: () => request<{ message: string }>('/api/webserver/nginx/reload', { method: 'POST' }),
+  getCaddyfile: () => request<{ path: string; content: string }>('/api/webserver/caddy/caddyfile'),
+  saveCaddyfile: (content: string) =>
+    request<{ message: string }>('/api/webserver/caddy/caddyfile', {
+      method: 'PUT',
+      body: JSON.stringify({ content })
+    }),
+  reloadCaddy: () => request<{ message: string }>('/api/webserver/caddy/reload', { method: 'POST' }),
+  generateReverseProxy: (input: ReverseProxyInput) =>
+    request<ReverseProxyResult>('/api/webserver/proxy', {
+      method: 'POST',
+      body: JSON.stringify(input)
+    }),
+
+  // Installer
+  getStackStatus: () => request<StackStatus>('/api/installer/status'),
+  getInstallJob: () => request<InstallJob>('/api/installer/job'),
+  startInstall: (components: string[]) =>
+    request<InstallJob>('/api/installer/install', {
+      method: 'POST',
+      body: JSON.stringify({ components })
     })
 };

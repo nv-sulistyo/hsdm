@@ -166,6 +166,24 @@ export function initDatabase() {
   if (!colNames.includes('before_command')) {
     try { db.exec("ALTER TABLE repositories ADD COLUMN before_command TEXT;"); } catch {}
   }
+  if (!colNames.includes('deploy_mode')) {
+    try { db.exec("ALTER TABLE repositories ADD COLUMN deploy_mode TEXT NOT NULL DEFAULT 'NONE';"); } catch {}
+  }
+  if (!colNames.includes('compose_file')) {
+    try { db.exec("ALTER TABLE repositories ADD COLUMN compose_file TEXT NOT NULL DEFAULT 'docker-compose.yml';"); } catch {}
+  }
+  if (!colNames.includes('compose_service')) {
+    try { db.exec("ALTER TABLE repositories ADD COLUMN compose_service TEXT;"); } catch {}
+  }
+  if (!colNames.includes('systemd_unit')) {
+    try { db.exec("ALTER TABLE repositories ADD COLUMN systemd_unit TEXT;"); } catch {}
+  }
+  if (!colNames.includes('domain')) {
+    try { db.exec("ALTER TABLE repositories ADD COLUMN domain TEXT;"); } catch {}
+  }
+  if (!colNames.includes('proxy_target_port')) {
+    try { db.exec("ALTER TABLE repositories ADD COLUMN proxy_target_port INTEGER;"); } catch {}
+  }
 
   // Seed default admin user if no users exist
   const checkUser = db.prepare('SELECT COUNT(*) as count FROM users').get() as { count: number };
