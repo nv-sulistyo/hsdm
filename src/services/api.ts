@@ -268,6 +268,13 @@ export const api = {
       method: 'POST',
       body: JSON.stringify(input)
     }),
+  getComposeOverride: (repositoryId: number, file = 'docker-compose.yml') =>
+    request<{ file: string; content: string; proxiedServices: string[] }>(`/api/docker/compose/${repositoryId}/override?file=${encodeURIComponent(file)}`),
+  writeComposeOverride: (repositoryId: number, file: string, services: string[]) =>
+    request<{ message: string }>(`/api/docker/compose/${repositoryId}/override?file=${encodeURIComponent(file)}`, {
+      method: 'POST',
+      body: JSON.stringify({ services })
+    }),
 
   // Monitoring
   getSystemMetrics: () => request<SystemMetrics>('/api/monitoring/system'),

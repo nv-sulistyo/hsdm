@@ -18,8 +18,11 @@ import {
   getComposeContent,
   saveComposeContent,
   getComposeServiceNames,
-  addComposeService
+  addComposeService,
+  getComposeOverrideContent,
+  writeComposeOverride
 } from '../services/docker.service.js';
+import { getSettings } from '../services/settings.service.js';
 import { logAudit } from '../services/audit.service.js';
 import { db } from '../db.js';
 
@@ -303,6 +306,40 @@ router.post('/compose/:repositoryId/services', async (req: AuthenticatedRequest,
       repositoryId: repo.id,
       ipAddress: req.ip,
       details: `File: ${file}, Service: ${req.body?.name}`
+    });
+    return res.json(result);
+  } catch (err: any) {
+    return res.status(err.status || 500).json({ error: err.message });
+  }
+});
+
+router.get('/compose/:repositoryId/override', async (req, res) => {
+  try {
+    const repo = getRepo(Number(req.params.repositoryId));
+    const file = getComposeFile(req);
+    const proxied = (repo.compose_proxy_services || '').split(',').map((s: string) => s.trim()).filter(Boolean);
+    return res.json({ file, content: getComposeOverrideContent(repo.local_path, file), proxiedServices: proxied });
+  } catch (err: any) {
+    return res.status(err.status || 500).json({ error: err.message });
+  }
+});
+
+router.post('/compose/:repositoryId/override', async (req: AuthenticatedRequest, res) => {
+  try {
+    const repo = getRepo(Number(req.params.repositoryId));
+    const file = getComposeFile(req);
+    const proxiedServices = Array.isArray(req.body?.services) ? req.body.services.map(String) : [];
+    const settings = getSettings();
+    const result = await writeComposeOverride(repo.local_path, file, proxiedServices, settings.proxy_network || 'proxy');
+    db.prepare('UPDATE repositories SET compose_proxy_services = ?, updated_at = ? WHERE id = ?')
+      .run(proxiedServices.filter(Boolean).join(','), new Date().toISOString(), repo.id);
+    logAudit({
+      userId: req.user?.id,
+      username: req.user?.username,
+      action: 'COMPOSE_OVERRIDE',
+      repositoryId: repo.id,
+      ipAddress: req.ip,
+      details: `File: ${file}, Proxied services: ${proxiedServices.join(', ') || 'none'}`
     });
     return res.json(result);
   } catch (err: any) {

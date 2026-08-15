@@ -184,6 +184,9 @@ export function initDatabase() {
   if (!colNames.includes('proxy_target_port')) {
     try { db.exec("ALTER TABLE repositories ADD COLUMN proxy_target_port INTEGER;"); } catch {}
   }
+  if (!colNames.includes('compose_proxy_services')) {
+    try { db.exec("ALTER TABLE repositories ADD COLUMN compose_proxy_services TEXT;"); } catch {}
+  }
 
   // Seed default admin user if no users exist
   const checkUser = db.prepare('SELECT COUNT(*) as count FROM users').get() as { count: number };

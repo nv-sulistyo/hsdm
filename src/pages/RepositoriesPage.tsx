@@ -65,6 +65,7 @@ export const RepositoriesPage: React.FC = () => {
   const [editDeployMode, setEditDeployMode] = useState<'NONE' | 'DOCKER_COMPOSE' | 'SYSTEMD'>('NONE');
   const [editComposeFile, setEditComposeFile] = useState('docker-compose.yml');
   const [editComposeService, setEditComposeService] = useState('');
+  const [editComposeProxyServices, setEditComposeProxyServices] = useState('');
   const [editSystemdUnit, setEditSystemdUnit] = useState('');
   const [editDomain, setEditDomain] = useState('');
   const [editProxyTargetPort, setEditProxyTargetPort] = useState('');
@@ -220,6 +221,7 @@ export const RepositoriesPage: React.FC = () => {
         deploy_mode: editDeployMode,
         compose_file: editComposeFile || 'docker-compose.yml',
         compose_service: editComposeService || undefined,
+        compose_proxy_services: editComposeProxyServices || undefined,
         systemd_unit: editSystemdUnit || undefined,
         domain: editDomain || undefined,
         proxy_target_port: editProxyTargetPort ? Number(editProxyTargetPort) : undefined,
@@ -463,6 +465,7 @@ export const RepositoriesPage: React.FC = () => {
                     setEditDeployMode(repo.deploy_mode || 'NONE');
                     setEditComposeFile(repo.compose_file || 'docker-compose.yml');
                     setEditComposeService(repo.compose_service || '');
+                    setEditComposeProxyServices(repo.compose_proxy_services || '');
                     setEditSystemdUnit(repo.systemd_unit || '');
                     setEditDomain(repo.domain || '');
                     setEditProxyTargetPort(repo.proxy_target_port ? String(repo.proxy_target_port) : '');
@@ -641,6 +644,7 @@ export const RepositoriesPage: React.FC = () => {
               </div>
 
               {editDeployMode === 'DOCKER_COMPOSE' && (
+                <>
                 <div className="grid grid-cols-2 gap-3">
                   <div>
                     <label className="block text-[#4A5D45] font-semibold mb-1">Compose file</label>
@@ -662,6 +666,20 @@ export const RepositoriesPage: React.FC = () => {
                     />
                   </div>
                 </div>
+                <div>
+                  <label className="block text-[#4A5D45] font-semibold mb-1">Services yang di-expose ke proxy (comma)</label>
+                  <input
+                    type="text"
+                    value={editComposeProxyServices}
+                    onChange={(e) => setEditComposeProxyServices(e.target.value)}
+                    placeholder="web, api"
+                    className="w-full px-3.5 py-2 bg-[#F3EFEA] border border-[#E5E0D8] rounded-xl text-[#2C2C2C] focus:outline-none focus:border-[#4A5D45] font-mono"
+                  />
+                  <p className="text-[11px] text-[#8C857E] mt-1">
+                    Hanya service ini yang digabungkan ke network proxy (Caddy/nginx). Database otomatis terisolasi.
+                  </p>
+                </div>
+                </>
               )}
 
               {editDeployMode === 'SYSTEMD' && (

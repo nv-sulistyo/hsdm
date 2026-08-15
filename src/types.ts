@@ -41,6 +41,7 @@ export interface Repository {
   systemd_unit?: string;
   domain?: string;
   proxy_target_port?: number;
+  compose_proxy_services?: string;
   auto_deploy: boolean;
   webhook_enabled: boolean;
   webhook_secret: string;
@@ -252,11 +253,13 @@ export interface ComposeServiceInput {
   image: string;
   container_name?: string;
   ports?: string[];
+  expose?: string[];
   volumes?: string[];
   environment?: string[];
   restart?: string;
   depends_on?: string[];
   network?: string;
+  networks?: string[];
   command?: string;
 }
 

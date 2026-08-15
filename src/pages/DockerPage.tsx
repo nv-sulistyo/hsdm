@@ -24,7 +24,8 @@ import {
   Hammer,
   StopCircle,
   AlertTriangle,
-  Package
+  Package,
+  CheckSquare
 } from 'lucide-react';
 
 type SubTab = 'containers' | 'compose' | 'images';
@@ -392,6 +393,8 @@ const ComposeSection: React.FC<{ repositories: Repository[] }> = ({ repositories
   const [composeFile, setComposeFile] = useState('docker-compose.yml');
   const [psEntries, setPsEntries] = useState<ComposePsEntry[]>([]);
   const [services, setServices] = useState<string[]>([]);
+  const [proxiedServices, setProxiedServices] = useState<string[]>([]);
+  const [overrideMsg, setOverrideMsg] = useState<string | null>(null);
   const [editorOpen, setEditorOpen] = useState(false);
   const [editorContent, setEditorContent] = useState('');
   const [wizardOpen, setWizardOpen] = useState(false);
@@ -402,9 +405,14 @@ const ComposeSection: React.FC<{ repositories: Repository[] }> = ({ repositories
     async (repoId: number, file: string) => {
       setBusy(true);
       try {
-        const [ps, svc] = await Promise.all([api.composePs(repoId, file), api.getComposeServices(repoId, file)]);
+        const [ps, svc, ovr] = await Promise.all([
+          api.composePs(repoId, file),
+          api.getComposeServices(repoId, file),
+          api.getComposeOverride(repoId, file).catch(() => ({ proxiedServices: [] as string[] }))
+        ]);
         setPsEntries(ps);
         setServices(svc);
+        setProxiedServices(ovr.proxiedServices || []);
       } catch (err) {
         console.error('Failed to load compose:', err);
         setPsEntries([]);
@@ -415,6 +423,24 @@ const ComposeSection: React.FC<{ repositories: Repository[] }> = ({ repositories
     },
     []
   );
+
+  const toggleProxy = async (service: string) => {
+    if (selectedId === '') return;
+    setBusy(true);
+    setOverrideMsg(null);
+    const next = proxiedServices.includes(service)
+      ? proxiedServices.filter((s) => s !== service)
+      : [...proxiedServices, service];
+    try {
+      const res = await api.writeComposeOverride(selectedId, composeFile, next);
+      setProxiedServices(next);
+      setOverrideMsg(res.message);
+    } catch (err: any) {
+      alert(err.message || 'Failed to update proxy attachment');
+    } finally {
+      setBusy(false);
+    }
+  };
 
   useEffect(() => {
     if (selectedId !== '') {
@@ -548,6 +574,40 @@ const ComposeSection: React.FC<{ repositories: Repository[] }> = ({ repositories
               )}
             </div>
 
+            {services.length > 0 && (
+              <div className="mt-4 p-4 rounded-2xl bg-[#F3EFEA]/70 border border-[#E5E0D8]">
+                <div className="flex items-center justify-between gap-3 mb-2">
+                  <div>
+                    <h4 className="text-xs font-semibold text-[#4A5D45]">Proxy Network</h4>
+                    <p className="text-[11px] text-[#8C857E] mt-0.5">
+                      Centang service yang boleh diakses dari internet (Caddy/nginx akan rout ke service ini). Database tidak perlu di-centang — otomatis terisolasi.
+                    </p>
+                  </div>
+                  {overrideMsg && <span className="text-[11px] text-[#3D4F38] font-semibold shrink-0">{overrideMsg}</span>}
+                </div>
+                <div className="flex flex-wrap gap-2">
+                  {services.map((s) => {
+                    const checked = proxiedServices.includes(s);
+                    return (
+                      <button
+                        key={s}
+                        onClick={() => toggleProxy(s)}
+                        disabled={busy}
+                        className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-[11px] font-semibold border transition disabled:opacity-50 ${
+                          checked
+                            ? 'bg-[#4A5D45] text-white border-[#4A5D45]'
+                            : 'bg-white text-[#6E6760] border-[#E5E0D8] hover:bg-[#EAE4DC]'
+                        }`}
+                      >
+                        <CheckSquare className={`w-3.5 h-3.5 ${checked ? 'text-white' : 'text-[#8C857E]'}`} />
+                        {s}
+                      </button>
+                    );
+                  })}
+                </div>
+              </div>
+            )}
+
             <div className="mt-4 overflow-x-auto">
               {psEntries.length > 0 ? (
                 <table className="w-full text-left text-xs text-[#2C2C2C]">
@@ -639,6 +699,7 @@ const AddServiceWizard: React.FC<{
   const [restart, setRestart] = useState('');
   const [network, setNetwork] = useState('');
   const [portsText, setPortsText] = useState('');
+  const [exposeText, setExposeText] = useState('');
   const [volumesText, setVolumesText] = useState('');
   const [envText, setEnvText] = useState('');
   const [dependsOnText, setDependsOnText] = useState('');
@@ -655,7 +716,11 @@ const AddServiceWizard: React.FC<{
       command: command || undefined,
       restart: restart || undefined,
       network: network || undefined,
+      networks: network
+        ? network.split(',').map((n) => n.trim()).filter(Boolean)
+        : undefined,
       ports: parseLines(portsText),
+      expose: parseLines(exposeText),
       volumes: parseLines(volumesText),
       environment: parseLines(envText),
       depends_on: parseLines(dependsOnText)
@@ -706,15 +771,21 @@ const AddServiceWizard: React.FC<{
         </div>
         <div>
           <label className={labelCls}>Network</label>
-          <input value={network} onChange={(e) => setNetwork(e.target.value)} placeholder="default" className={inputCls} />
+          <input value={network} onChange={(e) => setNetwork(e.target.value)} placeholder="default, proxy" className={inputCls} />
         </div>
         <div>
           <label className={labelCls}>Depends on (comma)</label>
           <input value={dependsOnText} onChange={(e) => setDependsOnText(e.target.value)} placeholder="db, redis" className={inputCls} />
         </div>
         <div className="md:col-span-2">
-          <label className={labelCls}>Ports (satu per baris)</label>
+          <label className={labelCls}>Ports publik (host:container, satu per baris)</label>
           <textarea value={portsText} onChange={(e) => setPortsText(e.target.value)} rows={2} placeholder={'8080:80\n5432:5432'} className={inputCls} />
+          <span className="text-[11px] text-[#8C857E] mt-1 block">Terekspos ke host — hanya untuk service yang memang harus publik (mis. database jangan di sini).</span>
+        </div>
+        <div className="md:col-span-2">
+          <label className={labelCls}>Expose internal (satu per baris)</label>
+          <textarea value={exposeText} onChange={(e) => setExposeText(e.target.value)} rows={2} placeholder={'3000\n80'} className={inputCls} />
+          <span className="text-[11px] text-[#8C857E] mt-1 block">Internal-only (tidak bisa diakses dari luar) — Caddy/nginx di network yang sama tetap bisa menjangkaunya via nama service.</span>
         </div>
         <div className="md:col-span-2">
           <label className={labelCls}>Volumes (satu per baris)</label>

@@ -179,6 +179,7 @@ export async function updateRepository(
     systemd_unit?: string;
     domain?: string;
     proxy_target_port?: number;
+    compose_proxy_services?: string;
     auto_deploy?: boolean;
     webhook_enabled?: boolean;
     webhook_secret?: string;
@@ -213,7 +214,7 @@ export async function updateRepository(
     SET name = ?, git_url = ?, branch = ?, local_path = ?, execution_user = ?,
         mode = ?, git_strategy = ?, deployment_trigger = ?, before_command = ?,
         post_pull_command = ?, deploy_mode = ?, compose_file = ?, compose_service = ?,
-        systemd_unit = ?, domain = ?, proxy_target_port = ?,
+        systemd_unit = ?, domain = ?, proxy_target_port = ?, compose_proxy_services = ?,
         auto_deploy = ?, webhook_enabled = ?,
         webhook_secret = ?, description = ?, updated_at = ?
     WHERE id = ?
@@ -234,6 +235,7 @@ export async function updateRepository(
     options.systemd_unit !== undefined ? (options.systemd_unit || null) : (current.systemd_unit || null),
     options.domain !== undefined ? (options.domain || null) : (current.domain || null),
     options.proxy_target_port !== undefined ? options.proxy_target_port : (current.proxy_target_port || null),
+    options.compose_proxy_services !== undefined ? (options.compose_proxy_services || null) : (current.compose_proxy_services || null),
     options.auto_deploy !== undefined ? (options.auto_deploy ? 1 : 0) : (current.auto_deploy ? 1 : 0),
     options.webhook_enabled !== undefined ? (options.webhook_enabled ? 1 : 0) : (current.webhook_enabled ? 1 : 0),
     options.webhook_secret !== undefined ? options.webhook_secret : current.webhook_secret,

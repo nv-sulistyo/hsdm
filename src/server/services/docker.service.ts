@@ -35,11 +35,13 @@ export interface ComposeServiceInput {
   image: string;
   container_name?: string;
   ports?: string[];
+  expose?: string[];
   volumes?: string[];
   environment?: string[];
   restart?: string;
   depends_on?: string[];
   network?: string;
+  networks?: string[];
   command?: string;
 }
 
@@ -187,8 +189,17 @@ export async function removeImage(id: string, force = false) {
 
 // ---------- Docker Compose ----------
 
-function composeArgs(file: string, rest: string[]) {
-  return ['compose', '-f', file, ...rest];
+function overrideFileName(file: string): string {
+  return file.replace(/\.ya?ml$/i, '.override.yml');
+}
+
+function composeArgs(dir: string, file: string, rest: string[]) {
+  const args = ['compose', '-f', file];
+  const override = overrideFileName(file);
+  if (override !== file && fs.existsSync(path.join(dir, override))) {
+    args.push('-f', override);
+  }
+  return [...args, ...rest];
 }
 
 export async function composePs(localPath: string, file = 'docker-compose.yml'): Promise<ComposePsEntry[]> {
@@ -196,7 +207,7 @@ export async function composePs(localPath: string, file = 'docker-compose.yml'):
   assertDockerInstalled(tools);
   assertComposeInstalled(tools);
   const dir = resolveRepoDir(localPath);
-  const res = await docker(composeArgs(file, ['ps', '--format', '{{.Name}}\t{{.Service}}\t{{.Status}}\t{{.Ports}}']), {
+  const res = await docker(composeArgs(dir, file, ['ps', '--format', '{{.Name}}\t{{.Service}}\t{{.Status}}\t{{.Ports}}']), {
     timeout: 30000,
     cwd: dir
   });
@@ -219,7 +230,7 @@ export async function composeUp(localPath: string, file = 'docker-compose.yml', 
   if (runningCompose.has(key)) throw new Error('A compose operation is already running for this project.');
   runningCompose.add(key);
   try {
-    const args = composeArgs(file, ['up', '-d', ...(build ? ['--build'] : []), ...services]);
+    const args = composeArgs(dir, file, ['up', '-d', ...(build ? ['--build'] : []), ...services]);
     const res = await runCommandOrThrow('docker', args, { timeout: 600000, cwd: dir });
     return { message: 'Compose stack started.', output: res.stdout || res.stderr };
   } finally {
@@ -236,7 +247,7 @@ export async function composeBuild(localPath: string, file = 'docker-compose.yml
   if (runningCompose.has(key)) throw new Error('A compose operation is already running for this project.');
   runningCompose.add(key);
   try {
-    const args = composeArgs(file, ['build', ...services]);
+    const args = composeArgs(dir, file, ['build', ...services]);
     const res = await runCommandOrThrow('docker', args, { timeout: 600000, cwd: dir });
     return { message: 'Compose images built.', output: res.stdout || res.stderr };
   } finally {
@@ -253,7 +264,7 @@ export async function composeDown(localPath: string, file = 'docker-compose.yml'
   if (runningCompose.has(key)) throw new Error('A compose operation is already running for this project.');
   runningCompose.add(key);
   try {
-    const args = composeArgs(file, ['down']);
+    const args = composeArgs(dir, file, ['down']);
     const res = await runCommandOrThrow('docker', args, { timeout: 300000, cwd: dir });
     return { message: 'Compose stack stopped.', output: res.stdout || res.stderr };
   } finally {
@@ -278,7 +289,7 @@ export async function saveComposeContent(localPath: string, file = 'docker-compo
 
   fs.writeFileSync(tmp, content, 'utf8');
   try {
-    const res = await runCommand('docker', composeArgs(file, ['config', '-q']), { timeout: 60000, cwd: dir });
+    const res = await runCommand('docker', composeArgs(dir, `.${file}.hsdm-tmp`, ['config', '-q']), { timeout: 60000, cwd: dir });
     if (res.code !== 0) {
       throw new Error(`Invalid compose file: ${(res.stderr || res.stdout || '').trim() || 'docker compose config failed'}`);
     }
@@ -289,7 +300,7 @@ export async function saveComposeContent(localPath: string, file = 'docker-compo
   const backup = fs.existsSync(full) ? fs.readFileSync(full, 'utf8') : null;
   fs.writeFileSync(full, content, 'utf8');
   try {
-    const res = await runCommand('docker', composeArgs(file, ['config', '-q']), { timeout: 60000, cwd: dir });
+    const res = await runCommand('docker', composeArgs(dir, file, ['config', '-q']), { timeout: 60000, cwd: dir });
     if (res.code !== 0) {
       if (backup !== null) fs.writeFileSync(full, backup, 'utf8');
       throw new Error(`Invalid compose file: ${(res.stderr || res.stdout || '').trim() || 'docker compose config failed'}`);
@@ -336,10 +347,18 @@ export function buildServiceBlock(input: ComposeServiceInput, indent: number): s
   if (input.container_name) lines.push(`${child}container_name: ${input.container_name}`);
   if (input.command) lines.push(`${child}command: ${JSON.stringify(input.command)}`);
   if (input.restart) lines.push(`${child}restart: ${input.restart}`);
-  if (input.network) lines.push(`${child}networks:\n${child}  - ${input.network}`);
+  const networks = [...(input.networks && input.networks.length > 0 ? input.networks : []), ...(input.network ? [input.network] : [])];
+  if (networks.length > 0) {
+    lines.push(`${child}networks:`);
+    for (const n of networks) lines.push(`${child}  - ${n}`);
+  }
   if (input.ports && input.ports.length > 0) {
     lines.push(`${child}ports:`);
     for (const p of input.ports) lines.push(`${child}  - "${p}"`);
+  }
+  if (input.expose && input.expose.length > 0) {
+    lines.push(`${child}expose:`);
+    for (const p of input.expose) lines.push(`${child}  - "${p}"`);
   }
   if (input.volumes && input.volumes.length > 0) {
     lines.push(`${child}volumes:`);
@@ -435,4 +454,66 @@ export async function addComposeService(
   const updated = insertServiceIntoContent(existing, block);
   await saveComposeContent(localPath, file, updated);
   return { message: `Service "${input.name}" added to ${file}.`, services: getComposeServiceNames(localPath, file) };
+}
+
+// ---------- Compose override (proxy network attachment) ----------
+
+export function getComposeOverrideContent(localPath: string, file = 'docker-compose.yml'): string {
+  const dir = resolveRepoDir(localPath);
+  const full = path.join(dir, overrideFileName(file));
+  if (!fs.existsSync(full)) return '';
+  return fs.readFileSync(full, 'utf8');
+}
+
+export function generateComposeOverrideContent(proxiedServices: string[], proxyNetwork: string): string {
+  const lines: string[] = ['# Generated by HSDM — attaches web-facing services to the shared proxy network.'];
+  lines.push('services:');
+  for (const s of proxiedServices) {
+    lines.push(`  ${s}:`);
+    lines.push('    networks:');
+    lines.push('      - default');
+    lines.push(`      - ${proxyNetwork}`);
+  }
+  lines.push('networks:');
+  lines.push(`  ${proxyNetwork}:`);
+  lines.push('    external: true');
+  return lines.join('\n') + '\n';
+}
+
+export async function writeComposeOverride(
+  localPath: string,
+  file: string,
+  proxiedServices: string[],
+  proxyNetwork: string
+): Promise<{ message: string }> {
+  const tools = await detectTools();
+  assertDockerInstalled(tools);
+  assertComposeInstalled(tools);
+  const dir = resolveRepoDir(localPath);
+  const override = overrideFileName(file);
+  const full = path.join(dir, override);
+
+  const cleanServices = [...new Set(proxiedServices.map(s => s.trim()).filter(s => /^[A-Za-z0-9._-]+$/.test(s)))];
+
+  if (cleanServices.length === 0) {
+    if (fs.existsSync(full)) fs.unlinkSync(full);
+    return { message: `Override file ${override} removed (no proxied services).` };
+  }
+
+  const content = generateComposeOverrideContent(cleanServices, proxyNetwork);
+  const backup = fs.existsSync(full) ? fs.readFileSync(full, 'utf8') : null;
+  fs.writeFileSync(full, content, 'utf8');
+  try {
+    const res = await runCommand('docker', composeArgs(dir, file, ['config', '-q']), { timeout: 60000, cwd: dir });
+    if (res.code !== 0) {
+      if (backup !== null) fs.writeFileSync(full, backup, 'utf8');
+      else fs.unlinkSync(full);
+      throw new Error(`Invalid override file: ${(res.stderr || res.stdout || '').trim() || 'docker compose config failed'}`);
+    }
+  } catch (err) {
+    if (backup !== null) fs.writeFileSync(full, backup, 'utf8');
+    else if (fs.existsSync(full)) fs.unlinkSync(full);
+    throw err;
+  }
+  return { message: `Override file ${override} written with ${cleanServices.length} proxied service(s).` };
 }
