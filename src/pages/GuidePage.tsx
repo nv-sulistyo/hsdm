@@ -23,9 +23,9 @@ import {
   UserCheck
 } from 'lucide-react';
 
-type GuideSection = 'quickstart' | 'workflow' | 'webhooks' | 'security' | 'faq';
+type GuideSection = 'quickstart' | 'workflow' | 'webhooks' | 'security' | 'vps' | 'faq';
 
-const GUIDE_SECTIONS: GuideSection[] = ['quickstart', 'workflow', 'webhooks', 'security', 'faq'];
+const GUIDE_SECTIONS: GuideSection[] = ['quickstart', 'workflow', 'webhooks', 'security', 'vps', 'faq'];
 
 function getSectionFromHash(): GuideSection {
   const seg = window.location.hash.replace(/^#\/?/, '').split('/')[1] as GuideSection;
@@ -169,6 +169,16 @@ export const GuidePage: React.FC = () => {
             }`}
           >
             🛡️ Arsitektur Keamanan
+          </button>
+          <button
+            onClick={() => selectSection('vps')}
+            className={`px-3.5 py-1.5 rounded-xl font-medium transition ${
+              activeSection === 'vps'
+                ? 'bg-white text-[#4A5D45] font-bold shadow-xs'
+                : 'bg-white/10 hover:bg-white/20 text-white'
+            }`}
+          >
+            🧩 VPS Stack (Docker + Caddy)
           </button>
           <button
             onClick={() => selectSection('faq')}
@@ -447,7 +457,114 @@ export const GuidePage: React.FC = () => {
         </div>
       )}
 
-      {/* SECTION 5: FAQ & TROUBLESHOOTING */}
+      {/* SECTION 5: VPS STACK */}
+      {activeSection === 'vps' && (
+        <div className="space-y-6">
+          <div className="p-5 rounded-[28px] bg-white border border-[#E5E0D8] shadow-sm space-y-4">
+            <h3 className="text-lg font-serif font-bold text-[#4A5D45] flex items-center gap-2">
+              <Layers className="w-5 h-5 text-[#B87333]" /> VPS Stack — Docker + Caddy Container (Level B)
+            </h3>
+            <p className="text-xs text-[#8C857E]">
+              Topologi produksi: Cloudflare DNS proxy langsung (tanpa tunnel) ke satu container Caddy di network{' '}
+              <code className="font-mono">proxy</code>, lalu ke container aplikasi berdasarkan <strong>nama service</strong> — bukan IP host.
+            </p>
+
+            <div className="p-4 rounded-2xl bg-[#F3EFEA] border border-[#E5E0D8] font-mono text-[11px] text-[#6E6760] space-y-1">
+              <div className="text-[#4A5D45] font-semibold">// Topologi</div>
+              <div>Cloudflare (proxy) ──▶ 80/443 ──▶ Caddy container (network `proxy`)</div>
+              <div className="pl-6">├── reverse_proxy web:3000   (service web ter-attach ke `proxy`)</div>
+              <div className="pl-6">├── reverse_proxy api:8080   (service api ter-attach ke `proxy`)</div>
+              <div className="pl-6">└── db / redis ──▶ network project sendiri (TIDAK terjangkau Caddy)</div>
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-xs">
+              <div className="p-4 rounded-2xl bg-[#F3EFEA] border border-[#E5E0D8] space-y-2">
+                <div className="flex items-center gap-2 font-bold text-[#4A5D45]">
+                  <Settings className="w-4 h-4 text-[#82937E]" /> Cara kerja
+                </div>
+                <p className="text-[#6E6760] leading-relaxed">
+                  HSDM <strong>tidak mengubah</strong> file compose GitHub. HSDM menulis <code className="font-mono">docker-compose.override.yml</code> otomatis
+                  yang menambahkan service-service bertanda ke network <code className="font-mono">proxy</code>. File override digabung via{' '}
+                  <code className="font-mono">docker compose -f compose.yml -f compose.override.yml up -d</code> saat deploy.
+                </p>
+                <p className="text-[#6E6760] leading-relaxed">
+                  Service yang tidak ditandai (mis. db, redis) hanya berada di network default project → isolasi otomatis dari Caddy dan project lain.
+                </p>
+              </div>
+
+              <div className="p-4 rounded-2xl bg-[#F3EFEA] border border-[#E5E0D8] space-y-2">
+                <div className="flex items-center gap-2 font-bold text-[#4A5D45]">
+                  <CheckCircle2 className="w-4 h-4 text-[#82937E]" /> Menandai service untuk proxy
+                </div>
+                <p className="text-[#6E6760] leading-relaxed">
+                  Tandai service web-facing (web, api) di dua tempat yang sama:
+                  <ul className="list-disc pl-4 mt-1 space-y-0.5">
+                    <li>Form repository: field <em>Services yang di-expose ke proxy</em>, atau</li>
+                    <li>Tab Docker → tombol <em>Proxy Network</em> per service.</li>
+                  </ul>
+                  Keduanya tersimpan ke kolom <code className="font-mono">compose_proxy_services</code>.
+                </p>
+              </div>
+
+              <div className="p-4 rounded-2xl bg-[#F3EFEA] border border-[#E5E0D8] space-y-2">
+                <div className="flex items-center gap-2 font-bold text-[#4A5D45]">
+                  <Zap className="w-4 h-4 text-[#82937E]" /> expose vs ports
+                </div>
+                <p className="text-[#6E6760] leading-relaxed">
+                  <code className="font-mono">expose:</code> hanya terbuka antar-container (internal) — <strong>disarankan</strong>.{' '}
+                  <code className="font-mono">ports:</code> mem-publish ke host (risiko tabrakan port &amp; akses luar). Dalam mode container,
+                  hanya Caddy yang membuka port 80/443 ke host.
+                </p>
+              </div>
+
+              <div className="p-4 rounded-2xl bg-[#F3EFEA] border border-[#E5E0D8] space-y-2">
+                <div className="flex items-center gap-2 font-bold text-[#4A5D45]">
+                  <Terminal className="w-4 h-4 text-[#82937E]" /> Generate Reverse Proxy
+                </div>
+                <p className="text-[#6E6760] leading-relaxed">
+                  Di tab <strong>Web Server</strong>, pilih engine Caddy. Saat mode <em>container</em>, field <em>Target host</em> memakai{' '}
+                  <strong>nama service</strong> (mis. <code className="font-mono">web</code>), bukan <code className="font-mono">127.0.0.1</code>.
+                  Caddyfile divalidasi &amp; di-reload lewat <code className="font-mono">docker exec caddy ...</code>.
+                </p>
+              </div>
+            </div>
+          </div>
+
+          <div className="p-5 rounded-[28px] bg-white border border-[#E5E0D8] shadow-sm space-y-3">
+            <h4 className="text-sm font-serif font-bold text-[#4A5D45] flex items-center gap-2">
+              <CheckCircle2 className="w-4 h-4 text-[#82937E]" /> Langkah setup
+            </h4>
+            <ol className="list-decimal pl-5 space-y-2 text-xs text-[#6E6760]">
+              <li>
+                <strong className="text-[#4A5D45]">Installer</strong> → pasang <em>Docker + Compose</em> lalu <em>Caddy (container)</em> (membuat network{' '}
+                <code className="font-mono">proxy</code> + compose infra di <code className="font-mono">{settings?.infrastructure_dir || '/opt/hsdm/infrastructure'}/caddy</code>).
+                Opsional: Portainer (https://IP:9443) &amp; Netdata (http://IP:19999).
+              </li>
+              <li>
+                <strong className="text-[#4A5D45]">Settings → VPS Stack</strong> → pastikan <em>Proxy Mode</em> = <em>container (Docker)</em>, Deploy Root, dan nama container.
+              </li>
+              <li>
+                <strong className="text-[#4A5D45]">Tambahkan repository</strong> dengan path di dalam Deploy Root. Tandai service web-facing di form repo.
+              </li>
+              <li>
+                <strong className="text-[#4A5D45]">Web Server → Generate Reverse Proxy</strong> → pilih Caddy, domain, target host = nama service, port internal.
+              </li>
+              <li>
+                <strong className="text-[#4A5D45]">DNS</strong> → arahkan domain ke IP server (Cloudflare proxy). Caddy menerbitkan TLS otomatis via Let's Encrypt.
+              </li>
+            </ol>
+            <div className="flex items-start gap-2 p-3 rounded-2xl bg-[#F3EFEA] border border-[#E5E0D8] text-[11px] text-[#6E6760]">
+              <AlertTriangle className="w-4 h-4 text-[#B87333] shrink-0 mt-0.5" />
+              <span>
+                Mode <em>native</em> tetap tersedia untuk ko-eksistensi dengan aaPanel (nginx di host, reverse proxy ke 127.0.0.1). Webhook{' '}
+                <code className="font-mono">/webhooks/github/:id</code> tetap berjalan di kedua mode. Uji coba penuh memerlukan server Linux dengan Docker daemon.
+              </span>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* SECTION 6: FAQ & TROUBLESHOOTING */}
       {activeSection === 'faq' && (
         <div className="space-y-6">
           <div className="p-5 rounded-[28px] bg-white border border-[#E5E0D8] shadow-sm space-y-4">
