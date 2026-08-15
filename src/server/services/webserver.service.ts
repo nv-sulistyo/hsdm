@@ -13,6 +13,7 @@ export interface NginxSite {
 export interface WebServerStatus {
   nginx: { installed: boolean; version?: string; sitesDir?: string; enabledDir?: string };
   caddy: { installed: boolean; version?: string; caddyfilePath?: string };
+  proxyMode: 'native' | 'container';
 }
 
 function getNginxDirs() {
@@ -24,12 +25,37 @@ function getNginxDirs() {
 
 function getCaddyfilePath(): string {
   const settings = getSettings();
+  if (settings.proxy_mode === 'container') {
+    return path.join(settings.infrastructure_dir || '/opt/hsdm/infrastructure', 'caddy', 'Caddyfile');
+  }
   return settings.caddyfile_path || '/etc/caddy/Caddyfile';
+}
+
+function getCaddyContainer(): string {
+  return getSettings().caddy_container_name || 'caddy';
 }
 
 export async function getWebServerStatus(): Promise<WebServerStatus> {
   const tools = await detectTools();
   const { sitesDir, enabledDir } = getNginxDirs();
+  const settings = getSettings();
+  const caddyContainer = settings.proxy_mode === 'container' ? getCaddyContainer() : null;
+
+  let caddyInstalled = tools.caddy.installed;
+  let caddyVersion = tools.caddy.version;
+  if (caddyContainer) {
+    try {
+      const inspect = await runCommand('docker', ['inspect', '--format', '{{.State.Running}}', caddyContainer], { timeout: 15000 });
+      caddyInstalled = inspect.code === 0 && inspect.stdout.trim() === 'true';
+      const verRes = await runCommand('docker', ['exec', caddyContainer, 'caddy', 'version'], { timeout: 15000 }).catch(() => null);
+      if (verRes && verRes.code === 0) {
+        caddyVersion = verRes.stdout.trim().split('\n')[0] || undefined;
+      }
+    } catch {
+      caddyInstalled = false;
+    }
+  }
+
   return {
     nginx: {
       installed: tools.nginx.installed,
@@ -38,10 +64,11 @@ export async function getWebServerStatus(): Promise<WebServerStatus> {
       enabledDir
     },
     caddy: {
-      installed: tools.caddy.installed,
-      version: tools.caddy.version,
+      installed: caddyInstalled,
+      version: caddyVersion,
       caddyfilePath: getCaddyfilePath()
-    }
+    },
+    proxyMode: settings.proxy_mode === 'container' ? 'container' : 'native'
   };
 }
 
@@ -194,7 +221,14 @@ export function getCaddyfileContent(): string {
 }
 
 async function validateCaddyfile(configPath: string): Promise<void> {
-  const res = await runCommand('caddy', ['validate', '--config', configPath], { timeout: 60000 });
+  const settings = getSettings();
+  let res;
+  if (settings.proxy_mode === 'container') {
+    const container = getCaddyContainer();
+    res = await runCommand('docker', ['exec', container, 'caddy', 'validate', '--config', '/etc/caddy/Caddyfile'], { timeout: 60000 });
+  } else {
+    res = await runCommand('caddy', ['validate', '--config', configPath], { timeout: 60000 });
+  }
   if (res.code !== 0) {
     throw new Error((res.stderr || res.stdout || '').trim() || 'caddy config validation failed');
   }
@@ -219,6 +253,15 @@ export async function saveCaddyfile(content: string): Promise<{ message: string 
 export async function reloadCaddy(): Promise<{ message: string }> {
   const status = await getWebServerStatus();
   if (!status.caddy.installed) throw new Error('caddy is not installed on this server.');
+  const settings = getSettings();
+  if (settings.proxy_mode === 'container') {
+    const container = getCaddyContainer();
+    const res = await runCommand('docker', ['exec', container, 'caddy', 'reload', '--config', '/etc/caddy/Caddyfile'], { timeout: 30000 });
+    if (res.code !== 0) {
+      throw new Error((res.stderr || res.stdout || '').trim() || 'caddy reload failed');
+    }
+    return { message: `caddy reloaded via container ${container}.` };
+  }
   const p = getCaddyfilePath();
   const viaSystemd = await runPrivileged(['systemctl', 'reload', 'caddy'], { timeout: 30000 });
   if (viaSystemd.code === 0) return { message: 'caddy reloaded via systemd.' };
@@ -236,6 +279,7 @@ export interface ReverseProxyInput {
   name: string;
   domain: string;
   targetPort: number;
+  targetHost?: string;
 }
 
 export interface ReverseProxyResult {
@@ -256,6 +300,13 @@ export async function generateReverseProxy(input: ReverseProxyInput): Promise<Re
   if (!Number.isFinite(targetPort) || targetPort < 1 || targetPort > 65535) {
     throw new Error('Invalid target port.');
   }
+  const settings = getSettings();
+  const defaultHost = settings.proxy_mode === 'container' ? 'frontend' : '127.0.0.1';
+  const targetHost = (input.targetHost || '').trim() || defaultHost;
+  if (!/^[a-zA-Z0-9._-]+$/.test(targetHost)) {
+    throw new Error('Invalid target host.');
+  }
+  const target = `${targetHost}:${targetPort}`;
 
   if (input.engine === 'nginx') {
     const { sitesDir } = getNginxDirs();
@@ -268,7 +319,7 @@ export async function generateReverseProxy(input: ReverseProxyInput): Promise<Re
       `    server_name ${domain};`,
       '',
       '    location / {',
-      `        proxy_pass http://127.0.0.1:${targetPort};`,
+      `        proxy_pass http://${target};`,
       '        proxy_set_header Host $host;',
       '        proxy_set_header X-Real-IP $remote_addr;',
       '        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;',
@@ -289,7 +340,7 @@ export async function generateReverseProxy(input: ReverseProxyInput): Promise<Re
   const block = [
     begin,
     `${domain} {`,
-    `    reverse_proxy 127.0.0.1:${targetPort}`,
+    `    reverse_proxy ${target}`,
     '}',
     end
   ].join('\n');

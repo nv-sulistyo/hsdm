@@ -108,6 +108,8 @@ export interface AppSettings {
   nginx_sites_dir?: string;
   nginx_sites_enabled_dir?: string;
   caddyfile_path?: string;
+  proxy_mode?: 'native' | 'container';
+  caddy_container_name?: string;
 }
 
 export interface DirectoryInspection {
@@ -337,6 +339,7 @@ export interface NginxSite {
 export interface WebServerStatus {
   nginx: { installed: boolean; version?: string; sitesDir?: string; enabledDir?: string };
   caddy: { installed: boolean; version?: string; caddyfilePath?: string };
+  proxyMode?: 'native' | 'container';
 }
 
 export interface ReverseProxyInput {
@@ -344,6 +347,7 @@ export interface ReverseProxyInput {
   name: string;
   domain: string;
   targetPort: number;
+  targetHost?: string;
 }
 
 export interface ReverseProxyResult {
@@ -366,6 +370,8 @@ export interface StackStatus {
   compose: StackStatusItem;
   nginx: StackStatusItem;
   caddy: StackStatusItem;
+  caddyContainer: StackStatusItem;
+  proxyMode: 'native' | 'container';
   isRoot: boolean;
   installable: boolean;
 }

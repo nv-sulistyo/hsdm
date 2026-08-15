@@ -4,10 +4,11 @@ import { StackStatus, InstallJob } from '../types.js';
 import { Package, Container, Globe, RefreshCw, Terminal, Download, AlertTriangle, CheckCircle2, XCircle, Loader2 } from 'lucide-react';
 
 interface ComponentDef {
-  id: 'docker' | 'nginx' | 'caddy';
+  id: 'docker' | 'nginx' | 'caddy' | 'caddy_container';
   label: string;
   description: string;
   icon: React.ReactNode;
+  statusKey?: 'docker' | 'compose' | 'nginx' | 'caddy' | 'caddyContainer';
 }
 
 const COMPONENTS: ComponentDef[] = [
@@ -25,14 +26,21 @@ const COMPONENTS: ComponentDef[] = [
   },
   {
     id: 'caddy',
-    label: 'Caddy',
-    description: 'Web server dengan auto-HTTPS (Let\'s Encrypt). Caddyfile dikelola dari tab Web Server.',
+    label: 'Caddy (native)',
+    description: 'Caddy via apt-get dengan auto-HTTPS (Let\'s Encrypt). Caddyfile dikelola dari tab Web Server.',
     icon: <Globe className="w-5 h-5 text-[#82937E]" />
+  },
+  {
+    id: 'caddy_container',
+    label: 'Caddy (container)',
+    description: 'Caddy di dalam Docker container pada network proxy — reverse proxy dengan nama service, tanpa mengubah compose repo.',
+    icon: <Container className="w-5 h-5 text-[#82937E]" />,
+    statusKey: 'caddyContainer'
   }
 ];
 
 const statusCard = (def: ComponentDef, status: StackStatus | null, installing: boolean) => {
-  const item = status?.[def.id];
+  const item = def.statusKey ? status?.[def.statusKey] : status?.[def.id];
   const installable = status?.installable ?? false;
   const isInstalled = item?.installed ?? false;
 
@@ -166,9 +174,22 @@ export const InstallerPage: React.FC = () => {
       )}
 
       {/* Component cards */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+      <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-4">
         {COMPONENTS.map((def) => statusCard(def, status, installing || running))}
       </div>
+
+      {status && (
+        <div className="p-4 rounded-[28px] bg-white border border-[#E5E0D8] shadow-sm flex items-center gap-3">
+          <div className="p-2 rounded-xl bg-[#F3EFEA] text-[#4A5D45]">
+            <Globe className="w-4 h-4" />
+          </div>
+          <p className="text-xs text-[#6E6760]">
+            Mode proxy aktif:{' '}
+            <span className="font-semibold text-[#4A5D45]">{status.proxyMode === 'container' ? 'container (Caddy in Docker)' : 'native (nginx / caddy via apt)'}</span>
+            {status.proxyMode === 'container' && <span className="text-[#8C857E]"> — reverse proxy memakai nama service di network proxy.</span>}
+          </p>
+        </div>
+      )}
 
       {/* Install job log */}
       {(job.status === 'RUNNING' || job.status === 'SUCCESS' || job.status === 'FAILED') && (

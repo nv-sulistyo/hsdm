@@ -74,7 +74,9 @@ export function getSettings(): AppSettings {
     infrastructure_dir: map.infrastructure_dir || '/opt/hsdm/infrastructure',
     nginx_sites_dir: map.nginx_sites_dir || '/etc/nginx/sites-available',
     nginx_sites_enabled_dir: map.nginx_sites_enabled_dir || '/etc/nginx/sites-enabled',
-    caddyfile_path: map.caddyfile_path || '/etc/caddy/Caddyfile'
+    caddyfile_path: map.caddyfile_path || '/etc/caddy/Caddyfile',
+    proxy_mode: (map.proxy_mode === 'container' ? 'container' : 'native') as 'native' | 'container',
+    caddy_container_name: map.caddy_container_name || 'caddy'
   };
 }
 
@@ -142,6 +144,15 @@ export function updateSettings(newSettings: Partial<AppSettings>): AppSettings {
   }
   if (newSettings.caddyfile_path !== undefined) {
     upsert.run('caddyfile_path', String(newSettings.caddyfile_path), now, now);
+  }
+  if (newSettings.proxy_mode !== undefined) {
+    const mode = String(newSettings.proxy_mode) === 'container' ? 'container' : 'native';
+    upsert.run('proxy_mode', mode, now, now);
+  }
+  if (newSettings.caddy_container_name !== undefined) {
+    const name = String(newSettings.caddy_container_name).trim().replace(/[^A-Za-z0-9_-]/g, '');
+    if (!name) throw new Error('Caddy container name cannot be empty.');
+    upsert.run('caddy_container_name', name, now, now);
   }
 
   return getSettings();

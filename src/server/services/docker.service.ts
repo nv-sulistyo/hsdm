@@ -76,6 +76,17 @@ export async function getDockerStatus() {
   };
 }
 
+export async function ensureNetwork(network: string): Promise<{ message: string; created: boolean }> {
+  const tools = await detectTools();
+  assertDockerInstalled(tools);
+  const inspect = await runCommand('docker', ['network', 'inspect', network], { timeout: 15000 }).catch(() => null);
+  if (inspect && inspect.code === 0) {
+    return { message: `Network '${network}' already exists.`, created: false };
+  }
+  await docker(['network', 'create', network], { timeout: 30000 });
+  return { message: `Network '${network}' created.`, created: true };
+}
+
 async function docker(args: string[], options: { timeout?: number; cwd?: string } = {}) {
   const res = await runCommand('docker', args, options);
   if (res.code !== 0) {

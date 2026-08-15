@@ -166,17 +166,17 @@ router.post('/caddy/reload', async (req: AuthenticatedRequest, res) => {
 
 router.post('/proxy', async (req: AuthenticatedRequest, res) => {
   try {
-    const { engine, name, domain, targetPort } = req.body || {};
+    const { engine, name, domain, targetPort, targetHost } = req.body || {};
     if (engine !== 'nginx' && engine !== 'caddy') {
       return res.status(400).json({ error: 'engine must be "nginx" or "caddy".' });
     }
-    const result = await generateReverseProxy({ engine, name, domain, targetPort });
+    const result = await generateReverseProxy({ engine, name, domain, targetPort, targetHost });
     logAudit({
       userId: req.user?.id,
       username: req.user?.username,
       action: engine === 'nginx' ? 'NGINX_GENERATE_PROXY' : 'CADDY_GENERATE_PROXY',
       ipAddress: req.ip,
-      details: `Domain: ${domain}, Port: ${targetPort}, Name: ${result.name}`
+      details: `Domain: ${domain}, Port: ${targetPort}${targetHost ? `, Host: ${targetHost}` : ''}, Name: ${result.name}`
     });
     return res.json(result);
   } catch (err: any) {

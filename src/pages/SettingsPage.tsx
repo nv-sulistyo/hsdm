@@ -38,6 +38,8 @@ export const SettingsPage: React.FC<SettingsPageProps> = ({ onAccountUpdated }) 
   const [deployRoot, setDeployRoot] = useState('/opt/hsdm/projects');
   const [proxyNetwork, setProxyNetwork] = useState('proxy');
   const [infrastructureDir, setInfrastructureDir] = useState('/opt/hsdm/infrastructure');
+  const [proxyMode, setProxyMode] = useState<'native' | 'container'>('native');
+  const [caddyContainerName, setCaddyContainerName] = useState('caddy');
 
   // Change password state
   const [currentPassword, setCurrentPassword] = useState('');
@@ -126,6 +128,8 @@ export const SettingsPage: React.FC<SettingsPageProps> = ({ onAccountUpdated }) 
       setDeployRoot(data.deploy_root || '/opt/hsdm/projects');
       setProxyNetwork(data.proxy_network || 'proxy');
       setInfrastructureDir(data.infrastructure_dir || '/opt/hsdm/infrastructure');
+      setProxyMode(data.proxy_mode === 'container' ? 'container' : 'native');
+      setCaddyContainerName(data.caddy_container_name || 'caddy');
     } catch (err: any) {
       console.error('Failed to fetch settings:', err);
     } finally {
@@ -259,7 +263,9 @@ export const SettingsPage: React.FC<SettingsPageProps> = ({ onAccountUpdated }) 
         known_hosts_path: knownHostsPath,
         deploy_root: deployRoot,
         proxy_network: proxyNetwork,
-        infrastructure_dir: infrastructureDir
+        infrastructure_dir: infrastructureDir,
+        proxy_mode: proxyMode,
+        caddy_container_name: caddyContainerName
       });
       setSettings(updated);
       setSettingsMsg({ text: 'Settings saved successfully.', type: 'success' });
@@ -489,6 +495,46 @@ export const SettingsPage: React.FC<SettingsPageProps> = ({ onAccountUpdated }) 
               className="w-full px-3.5 py-2 bg-[#F3EFEA] border border-[#E5E0D8] rounded-xl text-[#2C2C2C] font-mono focus:outline-none focus:border-[#4A5D45]"
             />
             <span className="text-[11px] text-[#8C857E] mt-1 block">Where infra compose (Caddy, Portainer, Netdata) lives.</span>
+          </div>
+        </div>
+
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-xs">
+          <div>
+            <label className="block text-[#4A5D45] font-semibold mb-1">Proxy Mode</label>
+            <div className="flex items-center gap-2">
+              {(['native', 'container'] as const).map((m) => (
+                <button
+                  key={m}
+                  type="button"
+                  onClick={() => setProxyMode(m)}
+                  className={`px-3.5 py-2 rounded-xl text-xs font-semibold border transition ${
+                    proxyMode === m
+                      ? 'bg-[#4A5D45] text-white border-[#4A5D45] shadow-sm'
+                      : 'bg-[#F3EFEA] text-[#6E6760] border-[#E5E0D8] hover:bg-white'
+                  }`}
+                >
+                  {m === 'native' ? 'native (apt)' : 'container (Docker)'}
+                </button>
+              ))}
+            </div>
+            <span className="text-[11px] text-[#8C857E] mt-1 block">
+              {proxyMode === 'container'
+                ? 'Caddy berjalan di container network proxy; reverse proxy memakai nama service.'
+                : 'nginx / caddy terpasang via apt; reverse proxy memakai 127.0.0.1.'}
+            </span>
+          </div>
+
+          <div>
+            <label className="block text-[#4A5D45] font-semibold mb-1">Caddy Container Name</label>
+            <input
+              type="text"
+              value={caddyContainerName}
+              onChange={(e) => setCaddyContainerName(e.target.value)}
+              disabled={proxyMode !== 'container'}
+              placeholder="caddy"
+              className="w-full px-3.5 py-2 bg-[#F3EFEA] border border-[#E5E0D8] rounded-xl text-[#2C2C2C] font-mono focus:outline-none focus:border-[#4A5D45] disabled:opacity-40"
+            />
+            <span className="text-[11px] text-[#8C857E] mt-1 block">Docker container name + service key di infra compose (default `caddy`).</span>
           </div>
         </div>
       </div>

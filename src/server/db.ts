@@ -213,7 +213,9 @@ export function initDatabase() {
     { key: 'infrastructure_dir', value: '/opt/hsdm/infrastructure' },
     { key: 'nginx_sites_dir', value: '/etc/nginx/sites-available' },
     { key: 'nginx_sites_enabled_dir', value: '/etc/nginx/sites-enabled' },
-    { key: 'caddyfile_path', value: '/etc/caddy/Caddyfile' }
+    { key: 'caddyfile_path', value: '/etc/caddy/Caddyfile' },
+    { key: 'proxy_mode', value: 'native' },
+    { key: 'caddy_container_name', value: 'caddy' }
   ];
 
   const now = new Date().toISOString();

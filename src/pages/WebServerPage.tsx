@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { api } from '../services/api.js';
 import { NginxSite, WebServerStatus, Repository } from '../types.js';
-import { Globe, RefreshCw, Pencil, Power, PowerOff, FileCheck2, RotateCw, X, Plus, Save, ShieldCheck } from 'lucide-react';
+import { Globe, RefreshCw, Pencil, Power, PowerOff, FileCheck2, RotateCw, X, Plus, Save, ShieldCheck, Container } from 'lucide-react';
 
 type Engine = 'nginx' | 'caddy';
 
@@ -327,13 +327,24 @@ export const WebServerPage: React.FC = () => {
                     <h3 className="text-sm font-serif font-bold text-[#4A5D45]">Caddyfile</h3>
                     <p className="text-[11px] text-[#8C857E] mt-0.5 font-mono">{status?.caddy.caddyfilePath || '/etc/caddy/Caddyfile'}</p>
                   </div>
-                  <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-[11px] font-semibold border bg-[#4A5D45]/10 text-[#4A5D45] border-[#4A5D45]/25">
-                    <ShieldCheck className="w-3.5 h-3.5" /> Auto-HTTPS
-                  </span>
+                  <div className="flex items-center gap-2">
+                    <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-[11px] font-semibold border bg-[#4A5D45]/10 text-[#4A5D45] border-[#4A5D45]/25">
+                      <ShieldCheck className="w-3.5 h-3.5" /> Auto-HTTPS
+                    </span>
+                    {status?.proxyMode === 'container' && (
+                      <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-[11px] font-semibold border bg-[#82937E]/15 text-[#82937E] border-[#82937E]/25">
+                        <Container className="w-3.5 h-3.5" /> Mode container
+                      </span>
+                    )}
+                  </div>
                 </div>
                 <p className="text-xs text-[#8C857E] mt-3">
-                  Caddy mengurus sertifikat TLS otomatis (Let's Encrypt) untuk tiap domain. Blok proxy hasil generate memakai marker{' '}
-                  <code className="font-mono"># HSDM-BEGIN</code> / <code className="font-mono"># HSDM-END</code> sehingga aman di-update.
+                  {status?.proxyMode === 'container'
+                    ? 'Caddy berjalan di Docker container pada network proxy. Reload/validasi via `docker exec`. Target reverse proxy memakai nama service (mis. `web:3000`).'
+                    : 'Caddy mengurus sertifikat TLS otomatis (Let\'s Encrypt) untuk tiap domain. Blok proxy hasil generate memakai marker '}
+                  {status?.proxyMode !== 'container' && (
+                    <><code className="font-mono"># HSDM-BEGIN</code> / <code className="font-mono"># HSDM-END</code> sehingga aman di-update.</>
+                  )}
                 </p>
               </div>
             </div>
@@ -347,6 +358,7 @@ export const WebServerPage: React.FC = () => {
         <ReverseProxyModal
           engine={engine}
           repositories={repositories}
+          proxyMode={status?.proxyMode}
           onClose={() => setProxyOpen(false)}
           onDone={async () => {
             if (engine === 'nginx') await fetchSites();
@@ -362,13 +374,16 @@ export const WebServerPage: React.FC = () => {
 const ReverseProxyModal: React.FC<{
   engine: Engine;
   repositories: Repository[];
+  proxyMode?: 'native' | 'container';
   onClose: () => void;
   onDone: () => Promise<void>;
-}> = ({ engine, repositories, onClose, onDone }) => {
+}> = ({ engine, repositories, proxyMode, onClose, onDone }) => {
   const [name, setName] = useState('');
   const [domain, setDomain] = useState('');
+  const [targetHost, setTargetHost] = useState('127.0.0.1');
   const [targetPort, setTargetPort] = useState('3000');
   const [busy, setBusy] = useState(false);
+  const containerMode = engine === 'caddy' && proxyMode === 'container';
 
   const applyRepo = (repoId: number) => {
     const repo = repositories.find((r) => r.id === repoId);
@@ -376,6 +391,10 @@ const ReverseProxyModal: React.FC<{
     if (repo.domain) setDomain(repo.domain);
     if (repo.proxy_target_port) setTargetPort(String(repo.proxy_target_port));
     if (!name.trim()) setName(repo.name);
+    if (containerMode) {
+      const first = (repo.compose_proxy_services || '').split(',').map((s) => s.trim()).filter(Boolean)[0];
+      if (first) setTargetHost(first);
+    }
   };
 
   const submit = async () => {
@@ -385,7 +404,8 @@ const ReverseProxyModal: React.FC<{
         engine,
         name,
         domain,
-        targetPort: parseInt(targetPort, 10)
+        targetPort: parseInt(targetPort, 10),
+        targetHost
       });
       alert(result.message);
       await onDone();
@@ -439,13 +459,29 @@ const ReverseProxyModal: React.FC<{
             <input value={domain} onChange={(e) => setDomain(e.target.value)} placeholder="app.example.com" className={inputCls} />
           </div>
           <div>
+            <label className={labelCls}>Target host *</label>
+            <input
+              value={targetHost}
+              onChange={(e) => setTargetHost(e.target.value)}
+              placeholder={containerMode ? 'web' : '127.0.0.1'}
+              className={inputCls}
+            />
+            {containerMode && (
+              <p className="text-[10px] text-[#82937E] mt-1">
+                Mode container: pakai nama service yang ter-expose ke network proxy (mis. <code className="font-mono">web</code>), bukan IP.
+              </p>
+            )}
+          </div>
+          <div>
             <label className={labelCls}>Target port (aplikasi) *</label>
             <input value={targetPort} onChange={(e) => setTargetPort(e.target.value)} type="number" min={1} max={65535} placeholder="3000" className={inputCls} />
           </div>
           <p className="text-[11px] text-[#8C857E] bg-[#F3EFEA] border border-[#E5E0D8] rounded-2xl p-3">
             {engine === 'nginx'
               ? 'Membuat file di sites-available, enable symlink, jalankan `nginx -t`, lalu reload. Arahkan DNS domain ke IP server.'
-              : 'Menambahkan blok site ke Caddyfile (auto-HTTPS), validasi `caddy validate`, lalu reload. Arahkan DNS domain ke IP server.'}
+              : containerMode
+                ? 'Menambahkan blok site ke Caddyfile (auto-HTTPS), validasi `caddy validate` di dalam container, lalu reload. Arahkan DNS domain ke IP server.'
+                : 'Menambahkan blok site ke Caddyfile (auto-HTTPS), validasi `caddy validate`, lalu reload. Arahkan DNS domain ke IP server.'}
           </p>
         </div>
         <div className="flex justify-end gap-2 px-6 py-3 bg-[#F3EFEA] border-t border-[#E5E0D8]">
