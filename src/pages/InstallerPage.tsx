@@ -4,11 +4,12 @@ import { StackStatus, InstallJob } from '../types.js';
 import { Package, Container, Globe, RefreshCw, Terminal, Download, AlertTriangle, CheckCircle2, XCircle, Loader2 } from 'lucide-react';
 
 interface ComponentDef {
-  id: 'docker' | 'nginx' | 'caddy' | 'caddy_container';
+  id: 'docker' | 'nginx' | 'caddy' | 'caddy_container' | 'portainer' | 'netdata';
   label: string;
   description: string;
   icon: React.ReactNode;
-  statusKey?: 'docker' | 'compose' | 'nginx' | 'caddy' | 'caddyContainer';
+  statusKey?: 'docker' | 'compose' | 'nginx' | 'caddy' | 'caddyContainer' | 'portainer' | 'netdata';
+  optional?: boolean;
 }
 
 const COMPONENTS: ComponentDef[] = [
@@ -36,6 +37,20 @@ const COMPONENTS: ComponentDef[] = [
     description: 'Caddy di dalam Docker container pada network proxy — reverse proxy dengan nama service, tanpa mengubah compose repo.',
     icon: <Container className="w-5 h-5 text-[#82937E]" />,
     statusKey: 'caddyContainer'
+  },
+  {
+    id: 'portainer',
+    label: 'Portainer',
+    description: 'UI manajemen Docker (satu instance untuk semua project). Akses via https://IP:9443.',
+    icon: <Container className="w-5 h-5 text-[#4A5D45]" />,
+    optional: true
+  },
+  {
+    id: 'netdata',
+    label: 'Netdata',
+    description: 'Monitoring real-time CPU/RAM/disk/network untuk semua container. Akses via http://IP:19999.',
+    icon: <Container className="w-5 h-5 text-[#4A5D45]" />,
+    optional: true
   }
 ];
 
@@ -235,8 +250,9 @@ export const InstallerPage: React.FC = () => {
       )}
 
       <p className="text-[11px] text-[#8C857E]">
-        Catatan: installer menjalankan daftar perintah apt-get yang sudah ditetapkan (tidak menerima perintah bebas dari user). Setiap komponen diverifikasi
-        setelah instalasi dan statusnya tersimpan di pengaturan. Fitur Docker/Web Server aktif otomatis setelah komponen terpasang.
+        Catatan: installer menjalankan daftar perintah apt-get / docker compose yang sudah ditetapkan (tidak menerima perintah bebas dari user). Setiap komponen
+        diverifikasi setelah instalasi dan statusnya tersimpan di pengaturan. Portainer &amp; Netdata adalah komponen opsional yang membutuhkan Docker — satu
+        instance melayani semua project. Fitur Docker/Web Server aktif otomatis setelah komponen terpasang.
       </p>
     </div>
   );

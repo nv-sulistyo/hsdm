@@ -20,6 +20,8 @@ export interface StackStatus {
   nginx: StackStatusItem;
   caddy: StackStatusItem;
   caddyContainer: StackStatusItem;
+  portainer: StackStatusItem;
+  netdata: StackStatusItem;
   proxyMode: 'native' | 'container';
   isRoot: boolean;
   installable: boolean;
@@ -74,6 +76,7 @@ export async function getStackStatus(): Promise<StackStatus> {
     caddyContainer.version = containerName;
     caddyContainer.installedAt = record['caddy']?.installedAt || record['caddy_container']?.installedAt;
   }
+  const fromRecord = (key: string): StackStatusItem => ({ ...(record[key] || {}), installed: !!record[key] });
 
   return {
     docker: map(tools.docker, 'docker'),
@@ -81,6 +84,8 @@ export async function getStackStatus(): Promise<StackStatus> {
     nginx: map(tools.nginx, 'nginx'),
     caddy: map(tools.caddy, 'caddy'),
     caddyContainer,
+    portainer: fromRecord('portainer'),
+    netdata: fromRecord('netdata'),
     proxyMode,
     isRoot: isRootUser(),
     installable: !isWindows() && isRootUser()
@@ -216,11 +221,72 @@ async function installCaddyContainer() {
   saveInstallRecord('caddy_container', { version: containerName });
 }
 
+async function installPortainer() {
+  const settings = getSettings();
+  const infraDir = settings.infrastructure_dir || '/opt/hsdm/infrastructure';
+  const dir = `${infraDir}/portainer`;
+  await runStep(`Create infra dir ${dir}`, `mkdir -p ${dir}/data`);
+  const composeContent = [
+    'services:',
+    '  portainer:',
+    '    image: portainer/portainer-ce:latest',
+    '    container_name: portainer',
+    '    restart: unless-stopped',
+    '    ports:',
+    '      - "9443:9443"',
+    '      - "9000:9000"',
+    '    volumes:',
+    '      - /var/run/docker.sock:/var/run/docker.sock',
+    '      - ./data:/data',
+    ''
+  ].join('\n');
+  writeFileSync(`${dir}/docker-compose.yml`, composeContent, 'utf8');
+  await runStep('Start Portainer', `cd ${dir} && docker compose up -d`);
+  await runStep('Verify Portainer container', `docker inspect --format '{{.State.Running}}' portainer`);
+  saveInstallRecord('portainer', {});
+}
+
+async function installNetdata() {
+  const settings = getSettings();
+  const infraDir = settings.infrastructure_dir || '/opt/hsdm/infrastructure';
+  const dir = `${infraDir}/netdata`;
+  await runStep(`Create infra dir ${dir}`, `mkdir -p ${dir}`);
+  const composeContent = [
+    'services:',
+    '  netdata:',
+    '    image: netdata/netdata:latest',
+    '    container_name: netdata',
+    '    restart: unless-stopped',
+    '    ports:',
+    '      - "19999:19999"',
+    '    volumes:',
+    '      - netdataconfig:/etc/netdata',
+    '      - netdatalib:/var/lib/netdata',
+    '      - netdatacache:/var/cache/netdata',
+    '      - /etc/passwd:/host/etc/passwd:ro',
+    '      - /etc/group:/host/etc/group:ro',
+    '      - /proc:/host/proc:ro',
+    '      - /sys:/host/sys:ro',
+    '      - /var/run/docker.sock:/var/run/docker.sock:ro',
+    'volumes:',
+    '  netdataconfig:',
+    '  netdatalib:',
+    '  netdatacache:',
+    ''
+  ].join('\n');
+  writeFileSync(`${dir}/docker-compose.yml`, composeContent, 'utf8');
+  await runStep('Start Netdata', `cd ${dir} && docker compose up -d`);
+  await runStep('Verify Netdata container', `docker inspect --format '{{.State.Running}}' netdata`);
+  saveInstallRecord('netdata', {});
+}
+
 const INSTALLERS: Record<string, () => Promise<void>> = {
   docker: installDocker,
   nginx: installNginx,
   caddy: installCaddy,
-  caddy_container: installCaddyContainer
+  caddy_container: installCaddyContainer,
+  portainer: installPortainer,
+  netdata: installNetdata
 };
 
 export function getInstallJob(): InstallJob {

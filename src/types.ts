@@ -371,6 +371,8 @@ export interface StackStatus {
   nginx: StackStatusItem;
   caddy: StackStatusItem;
   caddyContainer: StackStatusItem;
+  portainer: StackStatusItem;
+  netdata: StackStatusItem;
   proxyMode: 'native' | 'container';
   isRoot: boolean;
   installable: boolean;
